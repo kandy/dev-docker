@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/**
+ *  Usage:
+ *  > ant run -buildfile regenerate_perfomance.xml
+ */
+-->
+<project name="Prepare benchmark.jmx" basedir="/var/www/magento2ce" default="run">
+
+    <target name="_init">
+        <property name="m2_root_dir" location="/var/www/magento2ce"/>
+        <property name="m2_infra_root_dir" location="/var/www/magento2-infrastructure"/>
+        <property name="mpaf_root_dir" location="${m2_infra_root_dir}/build/core_dev/performance/mpaf"/>
+    </target>
+
+    <target name="run" depends="_init">
+        <!-- generate performance toolkit script -->
+        <exec executable="php" dir="${mpaf_root_dir}/tool/">
+            <arg line="jmx-generator.php --scenario=performanceToolkit"/>
+        </exec>
+        <!-- apply post-generation manipulation of the script -->
+        <exec executable="sed" failonerror="true">
+            <arg line="-i &apos;s#admin_path,backend#admin_path,admin#&apos; ${mpaf_root_dir}/tool/performanceToolkit.jmx"/>
+        </exec>
+        <exec executable="sed" failonerror="true">
+            <arg line="-i &apos;s#customer_checkout_percent,100#customer_checkout_percent,4#&apos; ${mpaf_root_dir}/tool/performanceToolkit.jmx"/>
+        </exec>
+        <exec executable="sed" failonerror="true">
+            <arg line="-i &apos;s#guest_checkout_percent,100#guest_checkout_percent,4#&apos; ${mpaf_root_dir}/tool/performanceToolkit.jmx"/>
+        </exec>
+        <exec executable="sed" failonerror="true">
+            <arg line="-i &apos;s#view_catalog_percent,100#view_catalog_percent,62#&apos; ${mpaf_root_dir}/tool/performanceToolkit.jmx"/>
+        </exec>
+        <exec executable="sed" failonerror="true">
+            <arg line="-i &apos;s#view_product_add_to_cart_percent,100#view_product_add_to_cart_percent,30#&apos; ${mpaf_root_dir}/tool/performanceToolkit.jmx"/>
+        </exec>
+        <copy file="${mpaf_root_dir}/tool/performanceToolkit.jmx" tofile="${m2_root_dir}/setup/performance-toolkit/benchmark.jmx" overwrite="true"/>
+    </target>
+</project>

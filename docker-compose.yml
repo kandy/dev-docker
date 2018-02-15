@@ -1,0 +1,48 @@
+version: '2.1'
+services:
+    webserver:
+        image: nginx:alpine
+        hostname: web
+        volumes:
+          - project-data:/magento
+          - ./etc/nginx/magento.conf:/etc/nginx/conf.d/default.conf
+          - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
+        ports:
+          - "80:80"
+
+
+    app:
+        build:
+          context: .
+          dockerfile: build/php/Dockerfile
+        hostname: app
+        container_name: magento2ee_web
+        volumes:
+          - project-data:/magento
+          - ./etc/php/tools:/usr/local/bin/magento2:ro
+          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+          - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
+          - ./etc/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+          - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini
+          - ./etc/php/profiler.php:/usr/local/etc/php/profiler.php
+
+    db:
+        container_name: magento2ee_db
+        image: mysql:5.7
+        ports:
+          - "3306:3306"
+        environment:
+          - MYSQL_ROOT_PASSWORD=root
+          - MYSQL_DATABASE=mysql
+    nfs:
+        container_name: nfs_share
+        image: itsthenetwork/nfs-server-alpine:latest
+        privileged: true
+        environment:
+          - SHARED_DIRECTORY=/nfsshare
+        ports:
+          - "62049:2049"
+        volumes:
+          - project-data:/nfsshare
+volumes:
+    project-data:

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+php ../magento2-infrastructure/build/core_dev/performance/mpaf/tool/jmx-generator.php --scenario=performanceToolkit --dir=/tmp/
+cat /tmp/performanceToolkit.jmx \
+    | sed "s#<?xml version="1.0"?>#<?xml version="1.0"?>\n<!--\n/**\n * Copyright ? Magento, Inc. All rights reserved.\n * See COPYING.txt for license details.\n */\n-->#" \
+    | sed "s#admin_path,backend#admin_path,admin#" \
+    | sed "s#customer_checkout_percent,100#customer_checkout_percent,4#" \
+    | sed "s#guest_checkout_percent,100#guest_checkout_percent,4#" \
+    | sed "s#view_catalog_percent,100#view_catalog_percent,62#" \
+    | sed "s#view_product_add_to_cart_percent,100#view_product_add_to_cart_percent,30#" > setup/performance-toolkit/benchmark_2015.jmx

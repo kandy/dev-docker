@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+mkdir project
+mount -o port=62049,proto=tcp,vers=4,hard,noatime,async -t nfs 0.0.0.0: ./project
+chmod 0777  project
+
+
+echo diskutil unmountDisk force /project
+
+

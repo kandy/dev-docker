@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+docker-compose exec app bin/magento setup:install -vvv --db-name=magento2 --db-user=root  --db-password=root --db-host=db --base-url=http://mage.perf/ --use-rewrites=1 --admin-firstname=Store --admin-lastname=Owner --admin-email=admin@example.com --admin-user=admin --admin-password=123123q --cleanup-database --admin-use-security-key=0 --backend-frontname=admin
