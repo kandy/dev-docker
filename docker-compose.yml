@@ -2,7 +2,7 @@ version: '2.1'
 services:
     webserver:
         image: nginx:alpine
-        hostname: web
+        hostname: mage.perf
         volumes:
           - project-data:/magento
           - ./etc/nginx/magento.conf:/etc/nginx/conf.d/default.conf
@@ -10,21 +10,30 @@ services:
         ports:
           - "80:80"
 
-
     app:
         build:
           context: .
           dockerfile: build/php/Dockerfile
         hostname: app
-        container_name: magento2ee_web
+        container_name: app
         volumes:
           - project-data:/magento
           - ./etc/php/tools:/usr/local/bin/magento2:ro
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
-          - ./etc/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
           - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini
-          - ./etc/php/profiler.php:/usr/local/etc/php/profiler.php
+
+    app-xdebug:
+        build:
+          context: .
+          dockerfile: build/php-xdebug/Dockerfile
+        hostname: app-xdebug
+        container_name: xdebug
+        volumes:
+          - project-data:/magento
+          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+          - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
+          - ./etc/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
 
     db:
         container_name: magento2ee_db
@@ -34,8 +43,13 @@ services:
         environment:
           - MYSQL_ROOT_PASSWORD=root
           - MYSQL_DATABASE=mysql
+    redis:
+        container_name: redis
+        image: redis:3.2-alpine
+        hostname: redis
+
     nfs:
-        container_name: nfs_share
+        container_name: nfs
         image: itsthenetwork/nfs-server-alpine:latest
         privileged: true
         environment:
@@ -44,5 +58,18 @@ services:
           - "62049:2049"
         volumes:
           - project-data:/nfsshare
+    samba:
+        container_name: samba
+        image: dperson/samba
+        ports:
+          - "139:139"
+          - "445:445"
+        volumes:
+          - project-data:/share
+        command:
+          - -u
+          - test;test
+          - -s
+          - share;/share;yes;no;yes;test root
 volumes:
     project-data:
