@@ -22,6 +22,8 @@ services:
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
           - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini
+          - ~/.ssh:/root/.ssh:ro
+          -  ~/.composer:/root/.composer
 
     app-xdebug:
         build:
@@ -43,6 +45,8 @@ services:
         environment:
           - MYSQL_ROOT_PASSWORD=root
           - MYSQL_DATABASE=mysql
+        volumes:
+          - db-data:/var/lib/mysql
     redis:
         container_name: redis
         image: redis:3.2-alpine
@@ -70,6 +74,7 @@ services:
           - -u
           - test;test
           - -s
-          - share;/share;yes;no;yes;test root
+          - share;/share;yes;no;yes;test
 volumes:
     project-data:
+    db-data:

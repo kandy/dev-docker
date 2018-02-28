@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libxslt-dev \
     vim \
     git \
+    less \
     mysql-client \
     openssh-server \
     libssl-dev \
