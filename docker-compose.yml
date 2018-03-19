@@ -6,7 +6,9 @@ services:
         volumes:
           - project-data:/magento
           - ./etc/nginx/magento.conf:/etc/nginx/conf.d/default.conf
+          - ./etc/nginx/xhgui.conf:/etc/nginx/conf.d/xhgui.conf
           - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
+          - ./xhgui:/xhgui
         ports:
           - "80:80"
 
@@ -36,6 +38,16 @@ services:
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
           - ./etc/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+
+    xhgui:
+        build:
+          context: .
+          dockerfile: build/xhgui/Dockerfile
+        hostname: xhgui.perf
+        container_name: xhgui
+        volumes:
+          - ./xhgui/router.php:/xhgui/router.php
+          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
 
     db:
         container_name: magento2ee_db
@@ -75,6 +87,10 @@ services:
           - test;test
           - -s
           - share;/share;yes;no;yes;test
+
+    mongodb:
+        image: mongo
+
 volumes:
     project-data:
     db-data:

@@ -40,5 +40,5 @@ RUN echo 'alias ll="ls -lA"' >>/root/.bashrc
 
 WORKDIR /magento
 
-EXPOSE 9000 9001
+EXPOSE 9000
 CMD ["php-fpm", "-R"]

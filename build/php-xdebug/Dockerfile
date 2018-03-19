@@ -34,5 +34,5 @@ RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-di
 
 WORKDIR /magento
 
-EXPOSE 9000 9001
+EXPOSE 9000
 CMD ["php-fpm", "-R"]
