@@ -1,4 +1,4 @@
-FROM php:7.0
+FROM php:7.1-apache
 MAINTAINER KAndy <to.kandy@gmail.com>
 
 RUN apt-get update && apt-get install -y \
@@ -15,6 +15,8 @@ RUN git clone https://github.com/kandy/xhgui.git /xhgui && cd /xhgui && composer
 
 WORKDIR /xhgui
 
+RUN chmod 777 cache
+
 EXPOSE 80
 
-CMD ["php", "-S", "0.0.0.0:80", "-t", "/xhgui/webroot/", "/xhgui/router.php"]
+CMD ["apache2-foreground"]

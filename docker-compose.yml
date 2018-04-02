@@ -48,6 +48,7 @@ services:
         volumes:
           - ./xhgui/router.php:/xhgui/router.php
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+          - ./etc/php/apache.conf:/etc/apache2/sites-enabled/000-default.conf
 
     db:
         container_name: magento2ee_db
@@ -74,19 +75,24 @@ services:
           - "62049:2049"
         volumes:
           - project-data:/nfsshare
-    samba:
-        container_name: samba
-        image: dperson/samba
-        ports:
-          - "139:139"
-          - "445:445"
-        volumes:
-          - project-data:/share
-        command:
-          - -u
-          - test;test
-          - -s
-          - share;/share;yes;no;yes;test
+
+    elasticsearch:
+        container_name: elasticsearch
+        image: elasticsearch:2-alpine
+
+#    samba:
+#        container_name: samba
+#        image: dperson/samba
+#        ports:
+#          - "139:139"
+#          - "445:445"
+#        volumes:
+#          - project-data:/share
+#        command:
+#          - -u
+#          - test;test
+#          - -s
+#          - share;/share;yes;no;yes;test
 
     mongodb:
         image: mongo
