@@ -17,6 +17,7 @@ services:
           context: .
           dockerfile: build/php/Dockerfile
         hostname: app
+        privileged: true
         container_name: app
         volumes:
           - project-data:/magento
@@ -26,6 +27,7 @@ services:
           - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini
           - ~/.ssh:/root/.ssh:ro
           -  ~/.composer:/root/.composer
+          
 
     app-xdebug:
         build:
@@ -46,7 +48,6 @@ services:
         hostname: xhgui.perf
         container_name: xhgui
         volumes:
-          - ./xhgui/router.php:/xhgui/router.php
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/apache.conf:/etc/apache2/sites-enabled/000-default.conf
 
