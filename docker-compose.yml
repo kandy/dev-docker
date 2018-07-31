@@ -11,6 +11,8 @@ services:
           - ./xhgui:/xhgui
         ports:
           - "80:80"
+        environment:
+          - VIRTUAL_HOST=mage.perf
 
     app:
         build:
@@ -18,7 +20,6 @@ services:
           dockerfile: build/php/Dockerfile
         hostname: app
         privileged: true
-        container_name: app
         volumes:
           - project-data:/magento
           - ./etc/php/tools:/usr/local/bin/magento2:ro
@@ -34,7 +35,6 @@ services:
           context: .
           dockerfile: build/php-xdebug/Dockerfile
         hostname: app-xdebug
-        container_name: xdebug
         volumes:
           - project-data:/magento
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
@@ -46,13 +46,11 @@ services:
           context: .
           dockerfile: build/xhgui/Dockerfile
         hostname: xhgui.perf
-        container_name: xhgui
         volumes:
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/apache.conf:/etc/apache2/sites-enabled/000-default.conf
 
     db:
-        container_name: magento2ee_db
         image: mysql:5.7
         ports:
           - "3306:3306"
@@ -66,34 +64,24 @@ services:
         image: redis:3.2-alpine
         hostname: redis
 
-    nfs:
-        container_name: nfs
-        image: itsthenetwork/nfs-server-alpine:latest
-        privileged: true
-        environment:
-          - SHARED_DIRECTORY=/nfsshare
-        ports:
-          - "62049:2049"
-        volumes:
-          - project-data:/nfsshare
-
     elasticsearch:
-        container_name: elasticsearch
         image: elasticsearch:2-alpine
 
-#    samba:
-#        container_name: samba
-#        image: dperson/samba
-#        ports:
-#          - "139:139"
-#          - "445:445"
-#        volumes:
-#          - project-data:/share
-#        command:
-#          - -u
-#          - test;test
-#          - -s
-#          - share;/share;yes;no;yes;test
+    samba:
+        image: dperson/samba
+        ports:
+          - "139:139"
+          - "445:445"
+        volumes:
+          - project-data:/share
+        networks:
+            - default
+        command:
+          - -u
+          - test;test
+          - -s
+          - share;/share;no;no;no;test;test
+
 
     mongodb:
         image: mongo
@@ -101,3 +89,6 @@ services:
 volumes:
     project-data:
     db-data:
+
+networks:
+    default:
