@@ -1,11 +1,11 @@
-FROM php:7.0-fpm
+FROM php:7.1-fpm
 MAINTAINER KAndy <to.kandy@gmail.com>
 
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libmcrypt-dev \
-    libpng12-dev \
+    libpng-dev \
     libicu-dev \
     libxslt-dev \
     vim \
