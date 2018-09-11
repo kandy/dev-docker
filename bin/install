@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 docker-compose exec app php bin/magento setup:uninstall
 docker-compose exec app composer install
-docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS magento2;"
+#docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS magento2;"
 docker-compose exec app php bin/magento setup:install -vvv \
     --db-name=magento2 \
-    --db-user=root  \
-    --db-password=root \
+    --db-user=magento  \
+    --db-password=magento \
     --db-host=db \
     --base-url=http://mage.perf/ \
 	--use-rewrites=1 \
