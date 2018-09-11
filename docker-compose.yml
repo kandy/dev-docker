@@ -59,8 +59,8 @@ services:
           - MYSQL_DATABASE=mysql
         volumes:
           - db-data:/var/lib/mysql
+
     redis:
-        container_name: redis
         image: redis:3.2-alpine
         hostname: redis
 
@@ -85,6 +85,17 @@ services:
 
     mongodb:
         image: mongo
+
+    nfs:
+        container_name: nfs
+        image: itsthenetwork/nfs-server-alpine:latest
+        privileged: true
+        environment:
+          - SHARED_DIRECTORY=/nfsshare
+        ports:
+          - "62049:2049"
+        volumes:
+          - project-data:/nfsshare
 
 volumes:
     project-data:

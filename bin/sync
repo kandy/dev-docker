@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
 mkdir project
+ 
+# mount_smbfs -o soft //test:test@mage.perf/share `pwd`/project
 
-mount_smbfs //test:test@mage.perf/share `pwd`/project
+mount \
+    -o port=62049,actimeo=5,proto=tcp,vers=4,noatime,async,hard,intr,rsize=81920,wsize=81920 \
+    -t nfs 127.0.0.1: ./project
 
 echo "To unmount on MacOsX run"
 echo "diskutil unmountDisk force project"

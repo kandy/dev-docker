@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-docker-compose exec app php bin/magento setup:uninstall --no-interactive
+docker-compose exec app php bin/magento setup:uninstall
 docker-compose exec app composer install
 docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS magento2;"
 docker-compose exec app php bin/magento setup:install -vvv \
