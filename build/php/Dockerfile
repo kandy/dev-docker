@@ -10,12 +10,15 @@ RUN apt-get update && apt-get install -y \
     libxslt-dev \
     vim \
     git \
+    cron \
     less \
     mysql-client \
     openssh-server \
     libssl-dev \
     libgringotts-dev \
     --no-install-recommends && rm -r /var/lib/apt/lists/*
+
+RUN service cron start
 
 RUN git clone --branch 4.x https://github.com/kandy/php-profiler-extension.git /usr/src/php/ext/tideways
 RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-mhash --with-openssl \
