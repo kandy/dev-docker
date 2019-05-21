@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
+docker-compose exec app bash -c 'rm -rf generated/*/*'
 docker-compose exec app php bin/magento setup:uninstall
 docker-compose exec app composer install
-#docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS magento2;"
+
+docker-compose exec redis redis-cli  FLUSHALL
+docker-compose exec app bash -c 'rm -rf generated/*/*'
+docker-compose exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
+
 docker-compose exec app php bin/magento setup:install -vvv \
     --db-name=magento2 \
-    --db-user=magento  \
-    --db-password=magento \
+    --db-user=root  \
+    --db-password=root \
     --db-host=db \
     --base-url=http://mage.perf/ \
 	--use-rewrites=1 \

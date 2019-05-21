@@ -1,4 +1,4 @@
-FROM php:7.1-fpm
+FROM php:7.2-fpm
 MAINTAINER KAndy <to.kandy@gmail.com>
 
 RUN apt-get update && apt-get install -y \
@@ -28,16 +28,12 @@ RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-di
     mbstring \
     opcache \
     bcmath \
-    mcrypt \
     soap \
     intl \
     zip \
     xsl \
     pdo_mysql \
     tideways
-
-RUN pecl install apcu && docker-php-ext-enable apcu
-RUN printf 'no\nno\nno\nyes\nno' | pecl install swoole && docker-php-ext-enable swoole
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
