@@ -45,7 +45,6 @@ services:
           - "9501:9501"
         volumes:
           - project-data:/magento
-          - ./etc/php/tools:/usr/local/bin/magento2:ro
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf:ro
           - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini:ro

@@ -24,3 +24,19 @@ docker-compose exec app php bin/magento setup:install -vvv \
 	--backend-frontname=admin \
 	--cache-backend=redis \
 	--cache-backend-redis-server=redis
+
+
+bin/magento setup:install -vvv \
+    --db-name=magento \
+    --db-user=root  \
+    --db-password=123123q \
+    --db-host=my-cluster-mysql-master \
+	--use-rewrites=1 \
+	--admin-firstname=Store \
+	--admin-lastname=Owner \
+	--admin-email=admin@example.com \
+	--admin-user=admin \
+	--admin-password=123123q \
+	--cleanup-database \
+	--admin-use-security-key=0 \
+	--backend-frontname=admin \
