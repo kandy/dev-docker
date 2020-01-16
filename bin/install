@@ -8,11 +8,11 @@ docker-compose exec app bash -c 'rm -rf generated/*/*'
 docker-compose exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
 docker-compose exec app php bin/magento setup:install -vvv \
-    --db-name=magento2 \
-    --db-user=root  \
-    --db-password=root \
-    --db-host=db \
-    --base-url=http://mage.perf/ \
+  --db-name=magento2 \
+  --db-user=root  \
+  --db-password=root \
+  --db-host=db \
+  --base-url=http://mage.perf/ \
 	--use-rewrites=1 \
 	--admin-firstname=Store \
 	--admin-lastname=Owner \
@@ -25,18 +25,3 @@ docker-compose exec app php bin/magento setup:install -vvv \
 	--cache-backend=redis \
 	--cache-backend-redis-server=redis
 
-
-bin/magento setup:install -vvv \
-    --db-name=magento \
-    --db-user=root  \
-    --db-password=123123q \
-    --db-host=my-cluster-mysql-master \
-	--use-rewrites=1 \
-	--admin-firstname=Store \
-	--admin-lastname=Owner \
-	--admin-email=admin@example.com \
-	--admin-user=admin \
-	--admin-password=123123q \
-	--cleanup-database \
-	--admin-use-security-key=0 \
-	--backend-frontname=admin \

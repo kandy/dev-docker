@@ -43,8 +43,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 RUN echo 'alias ll="ls -lA"' >>/root/.bashrc
 
+RUN goss -g /tests/php-fpm/7.2-alpine.goss.yaml validate
 
-WORKDIR /magento
+USER $NOT_ROOT_USER:$NOT_ROOT_USER
 
-EXPOSE 9000
-CMD ["php-fpm", "-R"]
+

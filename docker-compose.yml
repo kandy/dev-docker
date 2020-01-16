@@ -37,31 +37,22 @@ services:
 
     app:
         build:
-          context: .
-          dockerfile: build/php/Dockerfile
+          context: build/php
+          dockerfile: 7.3/Dockerfile
         hostname: app
-        privileged: true
-        ports:
-          - "9501:9501"
         volumes:
           - project-data:/magento
-          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
-          - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf:ro
           - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini:ro
           - ~/.ssh:/root/.ssh:ro
           -  ~/.composer:/root/.composer:delegated
-          - ./project:/sync:delegated
 
     app-xdebug:
         build:
-          context: .
-          dockerfile: build/php-xdebug/Dockerfile
+          context: build/php
+          dockerfile: 7.3/Dockerfile
         hostname: app-xdebug
         volumes:
           - project-data:/magento
-          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
-          - ./etc/php/php-fpm.conf:/usr/local/etc/php-fpm.conf
-          - ./etc/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
 
     db:
         image: mysql:5.7
