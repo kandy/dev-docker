@@ -1,30 +1,32 @@
-version: '2'
+version: '3.6'
 
 services:
-    varnish:
-      image: eeacms/varnish
-      ports:
-        - "80:6081"
-        - "6085:6085"
-      depends_on:
-        - webserver
-      environment:
-        BACKENDS: "webserver"
-        BACKENDS_PORT: "80"
-        DNS_ENABLED: "false"
-
-        BACKENDS_PROBE_ENABLED: "false"
-        BACKENDS_PROBE_INTERVAL: "3s"
-        BACKENDS_PROBE_TIMEOUT: "1s"
-        BACKENDS_PROBE_WINDOW: "3"
-        BACKENDS_PROBE_THRESHOLD: "2"
-
-        DASHBOARD_USER: "admin"
-        DASHBOARD_PASSWORD: "admin"
-        DASHBOARD_SERVERS: "mage.perf"
+#    varnish:
+#      image: eeacms/varnish
+#      ports:
+#        - "80:6081"
+#        - "6085:6085"
+#      depends_on:
+#        - webserver
+#      environment:
+#        BACKENDS: "webserver"
+#        BACKENDS_PORT: "80"
+#        DNS_ENABLED: "false"
+#
+#        BACKENDS_PROBE_ENABLED: "false"
+#        BACKENDS_PROBE_INTERVAL: "3s"
+#        BACKENDS_PROBE_TIMEOUT: "1s"
+#        BACKENDS_PROBE_WINDOW: "3"
+#        BACKENDS_PROBE_THRESHOLD: "2"
+#
+#        DASHBOARD_USER: "admin"
+#        DASHBOARD_PASSWORD: "admin"
+#        DASHBOARD_SERVERS: "mage.perf"
 
     webserver:
         image: nginx:alpine
+        ports:
+          - "80:80"
         hostname: mage.perf
         volumes:
           - project-data:/magento
@@ -39,10 +41,13 @@ services:
         build:
           context: build/php
           dockerfile: 7.3/Dockerfile
+          args:
+            XDEBUG: 0
         hostname: app
+        privileged: true
         volumes:
           - project-data:/magento
-          - ./etc/php/tideways.ini:/usr/local/etc/php/conf.d/tideways.ini:ro
+          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ~/.ssh:/root/.ssh:ro
           -  ~/.composer:/root/.composer:delegated
 
@@ -50,9 +55,14 @@ services:
         build:
           context: build/php
           dockerfile: 7.3/Dockerfile
+          args:
+            XDEBUG: 1
         hostname: app-xdebug
         volumes:
           - project-data:/magento
+          - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+          - ~/.ssh:/root/.ssh:ro
+          - ~/.composer:/root/.composer:delegated
 
     db:
         image: mysql:5.7
@@ -67,40 +77,19 @@ services:
           - db-data:/var/lib/mysql
 
     redis:
-        image: redis:3.2-alpine
+        image: redis:5-alpine
         hostname: redis
 
-    elasticsearch:
-        image: elasticsearch:2-alpine
-
-    samba:
-        image: dperson/samba
-        ports:
-          - "139:139"
-          - "445:445"
-        volumes:
-          - project-data:/share
-        networks:
-            - default
-        command:
-          - -u
-          - test;test
-          - -s
-          - share;/share;no;no;no;test;test
 
 
-    mongodb:
-        image: mongo
-
-
-    xhgui:
-      build:
-        context: .
-        dockerfile: build/xhgui/Dockerfile
-      hostname: xhgui.perf
-      volumes:
-        - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
-        - ./etc/php/apache.conf:/etc/apache2/sites-enabled/000-default.conf
+#    xhgui:
+#      build:
+#        context: .
+#        dockerfile: build/xhgui/Dockerfile
+#      hostname: xhgui.perf
+#      volumes:
+#        - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+#        - ./etc/php/apache.conf:/etc/apache2/sites-enabled/000-default.conf
 
 volumes:
     project-data:

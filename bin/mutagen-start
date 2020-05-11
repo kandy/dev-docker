@@ -5,24 +5,24 @@ mutagen daemon start
 # sync files from local to docker immediately,
 # local is alpha here, so it will rewrite all your changes made on the docker side
 mutagen create \
-    --default-file-mode-beta=0644 \
-    --default-directory-mode-beta=0755 \
+    --default-file-mode-beta=0666 \
+    --default-directory-mode-beta=0777 \
     --sync-mode=two-way-resolved \
-    --ignore=/.idea \
-    --ignore=/bin \
-    --ignore=/generated \
-    --ignore=/pub/media/ \
-    --ignore=/vendor \
+    --ignore=.idea \
+    --ignore=bin \
+    --ignore=generated \
+    --ignore=pub/media \
+    --ignore=vendor \
     --ignore-vcs \
-    src docker://$(docker-compose ps|grep perf_app_1|awk '{print $1}')/magento
+    src docker://perf_app_1/magento
 
 # sync vendor folder from local to docker immediately,
 # but keeping no-watch for docker side, so only "mutagen flush --all" will get the newest changes from the docker side (see bin/composer)
 # please note that docker is alpha here,
 # so it will rewrite your unsynced files on flush command in case of any issues with sync from local to docker
 mutagen create \
-    --default-file-mode-alpha=0644 \
-    --default-directory-mode-alpha=0755 \
+    --default-file-mode-alpha=0666 \
+    --default-directory-mode-alpha=0777 \
     --sync-mode=two-way-resolved \
     --watch-mode-alpha=no-watch \
     --ignore-vcs \
