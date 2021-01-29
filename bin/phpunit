@@ -1,0 +1,4 @@
+#!/bin/bash
+docker-compose exec app bash -c "XDEBUG_CONFIG= php -dzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so /magento/vendor/bin/phpunit $*"
+
+

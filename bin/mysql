@@ -1,2 +1,2 @@
 #!/bin/sh
-docker-compose exec db bash -c 'mysql -p$MYSQL_ROOT_PASSWORD'
+docker-compose exec db bash -c " mysql -p\$MYSQL_ROOT_PASSWORD $*"

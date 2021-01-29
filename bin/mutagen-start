@@ -1,10 +1,16 @@
 #!/bin/bash
-mutagen daemon start
 
+mutagen daemon start
+dir=$(dirname $0)
+project=$(basename `eval 'cd "$dir/../";pwd 2>/dev/null;cd'`)
+cd "$(dirname $0)/../"
 
 # sync files from local to docker immediately,
 # local is alpha here, so it will rewrite all your changes made on the docker side
-mutagen create \
+mutagen sync create src docker://${project}_app_1/magento \
+    --name "$project-base" \
+    --label "$project" \
+    --symlink-mode=posix-raw \
     --default-file-mode-beta=0666 \
     --default-directory-mode-beta=0777 \
     --sync-mode=two-way-resolved \
@@ -12,18 +18,9 @@ mutagen create \
     --ignore=bin \
     --ignore=generated \
     --ignore=pub/media \
+    --ignore=pub/static \
+    --ignore=dev/tests/integration/tmp/ \
     --ignore=vendor \
-    --ignore-vcs \
-    src docker://perf_app_1/magento
+    --ignore-vcs
 
-# sync vendor folder from local to docker immediately,
-# but keeping no-watch for docker side, so only "mutagen flush --all" will get the newest changes from the docker side (see bin/composer)
-# please note that docker is alpha here,
-# so it will rewrite your unsynced files on flush command in case of any issues with sync from local to docker
-mutagen create \
-    --default-file-mode-alpha=0666 \
-    --default-directory-mode-alpha=0777 \
-    --sync-mode=two-way-resolved \
-    --watch-mode-alpha=no-watch \
-    --ignore-vcs \
-    docker://$(docker-compose ps|grep perf_app_1|awk '{print $1}')/magento/vendor src/vendor
+

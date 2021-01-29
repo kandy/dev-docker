@@ -1,10 +1,46 @@
 #!/usr/bin/env bash
-docker-compose exec app bash -c 'rm -rf generated/*/*'
-docker-compose exec app php bin/magento setup:uninstall
-docker-compose exec app composer install
 
-docker-compose exec redis redis-cli  FLUSHALL
-docker-compose exec app bash -c 'rm -rf generated/*/*'
+DOMAIN=mage.perf
+
+while getopts "hp:i:-:" OPT; do
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        host )
+
+            DOMAIN="$OPTARG"
+            ;;
+
+        h | help )
+            print_usage
+            exit 0
+            ;;
+
+        \? )
+            exit 1
+            ;;
+
+        ??* )
+            die "Illegal option --$OPT"
+            ;;
+    esac
+done
+
+mutagen sync flush perf-base
+
+docker-compose exec app bash -c "
+  rm -rf generated/*/*
+  php bin/magento setup:uninstall -vvv
+  composer install
+  rm -rf generated/*/*
+"
+
+docker-compose exec redis redis-cli FLUSHALL
 docker-compose exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
 docker-compose exec app php bin/magento setup:install -vvv \
@@ -22,6 +58,14 @@ docker-compose exec app php bin/magento setup:install -vvv \
 	--cleanup-database \
 	--admin-use-security-key=0 \
 	--backend-frontname=admin \
+	--elasticsearch-host=elastic \
 	--cache-backend=redis \
 	--cache-backend-redis-server=redis
 
+docker-compose exec app bash -c "
+  bin/magento indexer:set-mode schedule
+  bin/magento config:set dev/grid/async_indexing 1
+  bin/magento config:set sales_email/general/async_sending 1
+  bin/magento config:set admin/usage/enabled  0
+  bin/magento cache:flush
+"

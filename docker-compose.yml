@@ -22,7 +22,10 @@ services:
 #        DASHBOARD_USER: "admin"
 #        DASHBOARD_PASSWORD: "admin"
 #        DASHBOARD_SERVERS: "mage.perf"
-
+    ghz:
+      image: obvionaoe/ghz
+      volumes:
+        - project-data:/magento
     webserver:
         image: nginx:alpine
         ports:
@@ -65,7 +68,7 @@ services:
           - ~/.composer:/root/.composer:delegated
 
     db:
-        image: mysql:5.7
+        image: mariadb:10.4.13
         ports:
           - "3306:3306"
         environment:
@@ -80,6 +83,21 @@ services:
         image: redis:5-alpine
         hostname: redis
 
+
+    elastic:
+        image: elasticsearch:7.5.0
+        hostname: elastic
+        ports:
+          - "9200:9200"
+        environment:
+          - cluster.name=docker-cluster
+          - bootstrap.memory_lock=true
+          - discovery.type=single-node
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+          memlock:
+            soft: -1
+            hard: -1
 
 
 #    xhgui:

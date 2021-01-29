@@ -1,20 +1,32 @@
 # Build all needed extesion
-ARG PHP_VERSION=7.3
+ARG PHP_VERSION=7.4
 
 FROM php:${PHP_VERSION}-fpm-alpine AS build
 
 MAINTAINER Andrii Kasian <akasian@adobe.com>
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache ${PHPIZE_DEPS} bash git tar \
+RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
     freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev \
     libsodium-dev \
     libxslt-dev \
     icu-dev \
     libressl-dev \
-    libzip-dev
+    libzip-dev \
+    oniguruma-dev \
+# swoole dependensies
+    curl-dev openssl-dev pcre-dev pcre2-dev zlib-dev \
+# grpc dependensies
+    linux-headers
 
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
+RUN case ${PHP_VERSION}  in \
+  7.3|7.2) docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ ;; \
+  *) docker-php-ext-configure gd --with-freetype --with-jpeg ;; \
+esac
+
+RUN case ${PHP_VERSION}  in \
+  "7.3"|"7.2") ;; \
+  *) docker-php-ext-configure mbstring --disable-mbregex  ;; \
+esac
 
 #RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/  \
 #    && curl -k -O https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz \
@@ -22,6 +34,20 @@ RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-di
 #       && cd libsodium-1.0.18 \
 #       && ./configure \
 #       && make && make install
+ARG SWOOLE_VERSION=4.6.2
+
+RUN docker-php-ext-install sockets && \
+    docker-php-source extract
+
+RUN mkdir /usr/src/php/ext/swoole && \
+    curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz && \
+    tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole && \
+    docker-php-ext-configure swoole \
+        --enable-http2   \
+        --enable-mysqlnd \
+        --enable-openssl \
+        --enable-sockets --enable-swoole-curl --enable-swoole-json
+
 
 RUN docker-php-ext-install -j$(nproc) \
     bcmath \
@@ -36,10 +62,13 @@ RUN docker-php-ext-install -j$(nproc) \
     sodium \
     xsl \
     zip \
-    pdo_mysql
+    pdo_mysql \
+    swoole
 
-# RUN  printf 'no\nno\nno\nyes\nno' | pecl install swoole && docker-php-ext-install swoole
+RUN pecl channel-update pecl.php.net
+RUN pecl install protobuf  && docker-php-ext-enable protobuf
 
+RUN pecl install grpc  && docker-php-ext-enable grpc
 
 
 #RUN NEWRELIC_PATH=https://download.newrelic.com`curl -s https://download.newrelic.com/php_agent/release/ | grep 'linux-musl.tar.gz' | cut -d '"' -f2` && \
@@ -54,19 +83,23 @@ RUN docker-php-ext-install -j$(nproc) \
 
 
 RUN pecl install -o -f redis && docker-php-ext-enable redis
-RUN pecl install -o -f apcu && docker-php-ext-enable apcu
+#RUN pecl install -o -f apcu && docker-php-ext-enable apcu
 
 ARG XDEBUG=0
-RUN pecl install -o -f xdebug  && if [ "$XDEBUG" = "1" ]; then  echo Enable xdebug ; docker-php-ext-enable xdebug;  fi;
+ARG XDEBUG_VERSION=3.0.0
+RUN if [ "$XDEBUG" = "1" ]; then pecl install -o -f xdebug-${XDEBUG_VERSION} &&  echo Enable xdebug && docker-php-ext-enable xdebug;  fi;
 
-RUN git clone https://github.com/NoiseByNorthwest/php-spx.git  \
+RUN mkdir -p /usr/local/share/misc/php-spx
+RUN if [ "$XDEBUG" = "0" ]; then git clone https://github.com/NoiseByNorthwest/php-spx.git  \
     --depth 1  --single-branch --branch master /usr/src/php/ext/spx && \
-  docker-php-ext-install -j$(nproc) spx
+  docker-php-ext-install -j$(nproc) spx; fi;
 
 RUN php --version && php -m
 
+RUN cat /etc/alpine-release
 
-FROM alpine:latest AS base
+
+FROM alpine:3.12 AS base
 
 ENV APP_ROOT=/magento
 ENV NOT_ROOT_USER=www-data
@@ -77,13 +110,16 @@ COPY --from=build /usr/local/sbin/php-fpm /usr/local/sbin/php-fpm
 COPY --from=build /usr/local/lib/php/extensions /usr/local/lib/php/extensions
 COPY --from=build /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
 COPY --from=build /usr/local/share/misc/php-spx /usr/local/share/misc/php-spx
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
 		ca-certificates \
 		bash \
 		git \
 		vim \
     unzip \
 		curl \
+		openssh-client \
+		procps \
+		strace \
 		openssl \
 		$( \
     		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
@@ -107,9 +143,12 @@ RUN set -eux; \
     --no-create-home \
     "$NOT_ROOT_USER"
 
-COPY env/php.ini /usr/local/etc/php/php.ini
+
 COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.17 \
+    && composer global require hirak/prestissimo
+    # todo remove it after composer 2.x
 
 
 # Clean Up
