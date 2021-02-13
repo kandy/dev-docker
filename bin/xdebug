@@ -1,0 +1,5 @@
+#!/bin/sh
+
+ED=`docker-compose exec app php -r "echo ini_get('extension_dir');"`
+
+docker-compose exec app php -dzend_extension=$ED/xdebug.so $@
