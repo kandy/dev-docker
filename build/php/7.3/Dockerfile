@@ -18,13 +18,15 @@ RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
 # grpc dependensies
     linux-headers
 
+ENV CFLAGS="-O3 -march=native"
+RUN docker-php-source extract
 RUN case ${PHP_VERSION}  in \
-  7.3|7.2) docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ ;; \
+  7.3) docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ ;; \
   *) docker-php-ext-configure gd --with-freetype --with-jpeg ;; \
 esac
 
 RUN case ${PHP_VERSION}  in \
-  "7.3"|"7.2") ;; \
+  7.3) ;; \
   *) docker-php-ext-configure mbstring --disable-mbregex  ;; \
 esac
 
@@ -34,22 +36,9 @@ esac
 #       && cd libsodium-1.0.18 \
 #       && ./configure \
 #       && make && make install
-ARG SWOOLE_VERSION=4.6.2
-
-RUN docker-php-ext-install sockets && \
-    docker-php-source extract
-
-RUN mkdir /usr/src/php/ext/swoole && \
-    curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz && \
-    tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole && \
-    docker-php-ext-configure swoole \
-        --enable-http2   \
-        --enable-mysqlnd \
-        --enable-openssl \
-        --enable-sockets --enable-swoole-curl --enable-swoole-json
-
 
 RUN docker-php-ext-install -j$(nproc) \
+    sockets \
     bcmath \
     gd \
     iconv \
@@ -62,13 +51,12 @@ RUN docker-php-ext-install -j$(nproc) \
     sodium \
     xsl \
     zip \
-    pdo_mysql \
-    swoole
+    pdo_mysql
 
 RUN pecl channel-update pecl.php.net
-RUN pecl install protobuf  && docker-php-ext-enable protobuf
 
-RUN pecl install grpc  && docker-php-ext-enable grpc
+RUN pecl install protobuf  && docker-php-ext-enable protobuf
+# RUN pecl install grpc  && docker-php-ext-enable grpc
 
 
 #RUN NEWRELIC_PATH=https://download.newrelic.com`curl -s https://download.newrelic.com/php_agent/release/ | grep 'linux-musl.tar.gz' | cut -d '"' -f2` && \
@@ -86,7 +74,7 @@ RUN pecl install -o -f redis && docker-php-ext-enable redis
 #RUN pecl install -o -f apcu && docker-php-ext-enable apcu
 
 ARG XDEBUG=0
-ARG XDEBUG_VERSION=3.0.0
+ARG XDEBUG_VERSION=3.0.4
 RUN if [ "$XDEBUG" = "1" ]; then pecl install -o -f xdebug-${XDEBUG_VERSION} &&  echo Enable xdebug && docker-php-ext-enable xdebug;  fi;
 
 RUN mkdir -p /usr/local/share/misc/php-spx
@@ -94,10 +82,20 @@ RUN if [ "$XDEBUG" = "0" ]; then git clone https://github.com/NoiseByNorthwest/p
     --depth 1  --single-branch --branch master /usr/src/php/ext/spx && \
   docker-php-ext-install -j$(nproc) spx; fi;
 
+ARG SWOOLE_VERSION=4.6.2
+RUN mkdir /usr/src/php/ext/swoole && \
+    curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz && \
+    tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole && \
+    docker-php-ext-configure swoole \
+        --enable-http2   \
+        --enable-mysqlnd \
+        --enable-openssl \
+        --enable-sockets --enable-swoole-curl --enable-swoole-json && \
+    docker-php-ext-install -j$(nproc)  swoole
+
 RUN php --version && php -m
-
+RUN php -r 'print_r(gd_info());'
 RUN cat /etc/alpine-release
-
 
 FROM alpine:3.12 AS base
 
