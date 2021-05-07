@@ -144,7 +144,7 @@ RUN set -eux; \
 
 COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.17 \
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.22 \
     && composer global require hirak/prestissimo
     # todo remove it after composer 2.x
 
