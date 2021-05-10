@@ -31,11 +31,12 @@ while getopts "hp:i:-:" OPT; do
     esac
 done
 
-mutagen sync flush perf-base
+# mutagen sync flush perf-base
 
 docker-compose exec app bash -c "
   rm -rf generated/*/*
   php bin/magento setup:uninstall -vvv
+  curl -XDELETE http://elastic:9200/_all
   composer install
   rm -rf generated/*/*
 "
@@ -58,11 +59,14 @@ docker-compose exec app php bin/magento setup:install -vvv \
 	--cleanup-database \
 	--admin-use-security-key=0 \
 	--backend-frontname=admin \
+	--session-save=redis \
+	--session-save-redis-host=redis \
 	--elasticsearch-host=elastic \
 	--cache-backend=redis \
 	--cache-backend-redis-server=redis
 
 docker-compose exec app bash -c "
+  bin/magento s:p:g -s setup/performance-toolkit/profiles/ce/small.xml
   bin/magento indexer:set-mode schedule
   bin/magento config:set dev/grid/async_indexing 1
   bin/magento config:set sales_email/general/async_sending 1
