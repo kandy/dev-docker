@@ -19,7 +19,8 @@ mutagen sync create src docker://${project}_app_1/magento \
     --ignore=generated \
     --ignore=pub/media \
     --ignore=pub/static \
-    --ignore=dev/tests/integration/tmp/ \
+    --ignore=dev/tests/integration/tmp \
+    --ignore=dev/tests/acceptance/tests \
     --ignore=vendor \
     --ignore-vcs
 

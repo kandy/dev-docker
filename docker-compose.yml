@@ -22,10 +22,6 @@ services:
 #        DASHBOARD_USER: "admin"
 #        DASHBOARD_PASSWORD: "admin"
 #        DASHBOARD_SERVERS: "mage.perf"
-    ghz:
-      image: obvionaoe/ghz
-      volumes:
-        - project-data:/magento
     webserver:
         image: nginx:alpine
         ports:
@@ -39,6 +35,11 @@ services:
           - ./xhgui:/xhgui
         environment:
           - VIRTUAL_HOST=mage.perf
+        networks:
+          default:
+            aliases:
+              - "mage.perf"
+
 
     app:
         build:
@@ -68,7 +69,7 @@ services:
           - ~/.composer:/root/.composer:delegated
 
     db:
-        image: mariadb:10.4.13
+        image: mariadb:10.4
         ports:
           - "3306:3306"
         environment:

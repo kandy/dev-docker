@@ -148,6 +148,9 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && composer global require hirak/prestissimo
     # todo remove it after composer 2.x
 
+#Setup sendmail in php
+RUN echo '#!/usr/bin/php' > /usr/local/bin/sendmail
+ && chmod +x /usr/local/bin/sendmail
 
 # Clean Up
 RUN rm -rf /var/cache/apk/* && \
