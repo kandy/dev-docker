@@ -81,7 +81,8 @@ services:
           - db-data:/var/lib/mysql
 
     redis:
-        image: redis:5-alpine
+        image: redis:6-alpine
+
         hostname: redis
 
 
@@ -99,6 +100,13 @@ services:
           memlock:
             soft: -1
             hard: -1
+     
+    fluentbit:
+        # image name from repository or local
+        image: fluent/fluent-bit
+
+        volumes:
+          - ./etc/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
 
 
 #    xhgui:
@@ -113,6 +121,7 @@ services:
 volumes:
     project-data:
     db-data:
+    elastic-data:
 
 networks:
     default:

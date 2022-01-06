@@ -18,7 +18,7 @@ RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
 # grpc dependensies
     linux-headers
 
-ENV CFLAGS="-O3 -march=native"
+# for local only ENV CFLAGS="-O3 -march=native"
 RUN docker-php-source extract
 RUN case ${PHP_VERSION}  in \
   7.3) docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ ;; \
@@ -29,13 +29,6 @@ RUN case ${PHP_VERSION}  in \
   7.3) ;; \
   *) docker-php-ext-configure mbstring --disable-mbregex  ;; \
 esac
-
-#RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/  \
-#    && curl -k -O https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz \
-#       && tar xfvz libsodium-1.0.18.tar.gz \
-#       && cd libsodium-1.0.18 \
-#       && ./configure \
-#       && make && make install
 
 RUN docker-php-ext-install -j$(nproc) \
     sockets \
@@ -113,12 +106,13 @@ RUN apk add --update --no-cache \
 		bash \
 		git \
 		vim \
-    unzip \
+        unzip \
 		curl \
 		openssh-client \
 		procps \
 		strace \
 		openssl \
+		mysql-client \
 		$( \
     		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
     			| tr ',' '\n' \
@@ -144,12 +138,11 @@ RUN set -eux; \
 
 COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=1.10.22 \
-    && composer global require hirak/prestissimo
-    # todo remove it after composer 2.x
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
 
 #Setup sendmail in php
-RUN echo '#!/usr/bin/php' > /usr/local/bin/sendmail
+RUN echo '#!/usr/bin/php' > /usr/local/bin/sendmail \
  && chmod +x /usr/local/bin/sendmail
 
 # Clean Up
@@ -160,7 +153,7 @@ RUN rm -rf /var/cache/apk/* && \
 
 ### Collapse layers ###
 
-FROM scratch
+FROM alpine:3.12
 COPY --from=base / .
 
 WORKDIR /magento

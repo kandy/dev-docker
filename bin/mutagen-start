@@ -8,12 +8,13 @@ cd "$(dirname $0)/../"
 # sync files from local to docker immediately,
 # local is alpha here, so it will rewrite all your changes made on the docker side
 mutagen sync create src docker://${project}_app_1/magento \
-    --name "$project-base" \
+    --name "$project-to-docker" \
     --label "$project" \
     --symlink-mode=posix-raw \
     --default-file-mode-beta=0666 \
     --default-directory-mode-beta=0777 \
-    --sync-mode=two-way-resolved \
+    --sync-mode=one-way-replica  \
+    --watch-mode-beta=no-watch  \
     --ignore=.idea \
     --ignore=bin \
     --ignore=generated \
@@ -24,4 +25,24 @@ mutagen sync create src docker://${project}_app_1/magento \
     --ignore=vendor \
     --ignore-vcs
 
+mutagen sync create docker://${project}_app_1/magento/vendor  src/vendor \
+    --name "$project-vendor-from-docker" \
+    --label "$project" \
+    --symlink-mode=posix-raw \
+    --default-file-mode-beta=0666 \
+    --default-directory-mode-beta=0777 \
+    --sync-mode=one-way-replica  \
+    --watch-mode-beta=no-watch  \
+    --ignore=.idea \
+    --ignore-vcs
 
+mutagen sync create docker://${project}_app_1/magento/generated  src/generated \
+    --name "$project-generated-from-docker" \
+    --label "$project" \
+    --symlink-mode=posix-raw \
+    --default-file-mode-beta=0666 \
+    --default-directory-mode-beta=0777 \
+    --sync-mode=one-way-replica  \
+    --watch-mode-beta=no-watch  \
+    --ignore=.idea \
+    --ignore-vcs
