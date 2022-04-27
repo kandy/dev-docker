@@ -1,136 +1,173 @@
-FROM behance/docker-base:2.6-alpine
+# Build all needed extesion
 MAINTAINER Andrii Kasian <akasian@adobe.com>
 
-# Used with alternative CMD (worker.sh), leverages supervisor to maintain long-running processes
-ENV APP_ROOT=/app \
-    CONTAINER_ROLE=web \
-    CONTAINER_PORT=9000 \
-    NOT_ROOT_USER=www-data \
-    S6_KILL_FINISH_MAXTIME=55000
+ARG PHP_VERSION=8.1
 
-# Create an unprivileged user
-RUN addgroup --gid 1000 $NOT_ROOT_USER && \
-  adduser  --uid 1000 \
-    --disabled-password \
-    --home "$APP_ROOT" \
-    --ingroup "$NOT_ROOT_USER" \
-    --no-create-home \
-    "$NOT_ROOT_USER"
-
-RUN apk update --no-cache && \
-    /bin/bash -e /clean.sh
-
-# Overlay the root filesystem from this repo
-COPY ./container/root /
+FROM php:${PHP_VERSION}-fpm-alpine AS build
 
 
-# Using a non-privileged port to prevent having to use setcap internally
+RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
+    freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev \
+    libsodium-dev \
+    libxslt-dev \
+    icu-dev \
+    libressl-dev \
+    libzip-dev \
+    oniguruma-dev \
+# swoole dependensies
+    curl-dev openssl-dev pcre-dev pcre2-dev zlib-dev \
+# grpc dependensies
+    linux-headers
 
-EXPOSE ${CONTAINER_PORT}
+# for local only ENV CFLAGS="-O3 -march=native"
+RUN docker-php-source extract
+RUN case ${PHP_VERSION}  in \
+  7.3) docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ ;; \
+  *) docker-php-ext-configure gd --with-freetype --with-jpeg ;; \
+esac
 
-# Set TERM to suppress warning messages.
-ENV CONF_PHPFPM=/etc/php7/php-fpm.conf \
-    CONF_PHPMODS=/etc/php7/conf.d \
-    CONF_FPMPOOL=/etc/php7/php-fpm.d/www.conf \
-    CONF_FPMOVERRIDES=/app/overrides.user.ini \
-    APP_ROOT=/app \
-    PHP_FPM_MAX_CHILDREN=4096 \
-    PHP_FPM_START_SERVERS=20 \
-    PHP_FPM_MAX_REQUESTS=1024 \
-    PHP_FPM_MIN_SPARE_SERVERS=5 \
-    PHP_FPM_MAX_SPARE_SERVERS=128 \
-    PHP_FPM_MEMORY_LIMIT=256M \
-    PHP_FPM_MAX_EXECUTION_TIME=60 \
-    PHP_FPM_UPLOAD_MAX_FILESIZE=1M \
-    PHP_OPCACHE_MEMORY_CONSUMPTION=128 \
-    PHP_OPCACHE_INTERNED_STRINGS_BUFFER=16 \
-    PHP_OPCACHE_MAX_WASTED_PERCENTAGE=5 \
-    CFG_APP_DEBUG=1
+RUN case ${PHP_VERSION}  in \
+  7.3) ;; \
+  *) docker-php-ext-configure mbstring --disable-mbregex  ;; \
+esac
 
-RUN apk update && \
-    apk add --no-cache \
-      git \
-      curl \
-      wget \
-      php7 \
-      php7-bcmath \
-      php7-bz2 \
-      php7-fpm \
-      php7-apcu \
-      php7-calendar \
-      php7-common \
-      php7-ctype \
-      php7-curl \
-      php7-dom \
-      php7-exif \
-      php7-gd \
-      php7-gettext \
-      php7-iconv \
-      php7-intl \
-      php7-json \
-      php7-sodium \
-      php7-mbstring \
-      php7-mysqlnd \
-      php7-opcache \
-      php7-openssl \
-      php7-pcntl \
-      php7-pdo \
-      php7-pdo_mysql \
-      php7-phar \
-      php7-posix \
-      php7-session \
-      php7-simplexml \
-      php7-sockets \
-      php7-shmop \
-      php7-tokenizer \
-      php7-xdebug \
-      php7-xml \
-      php7-xmlreader \
-      php7-xmlwriter \
-      php7-xsl \
-      php7-zip \
-      php7-zlib \
-    && \
-      # Disable postgres by default
-      # Remove extra extensions installed via packages for other versions of PHP, leaving the active engine folder
-      rm -rf /usr/lib/php/20121212 && \
-      rm -rf /usr/lib/php/20131226 && \
-      rm -rf /usr/lib/php/20151012 && \
-      rm -rf /usr/lib/php/20160303 && \
-      rm -rf /usr/lib/php/20170718 && \
-    # Disable xdebug by default \
-    sed -i 's/zend_extension\s\?=/;zend_extension =/' $CONF_PHPMODS/xdebug.ini && \
-    /bin/bash -e /clean.sh
+RUN docker-php-ext-install -j$(nproc) \
+    sockets \
+    bcmath \
+    gd \
+    intl \
+    mbstring \
+    opcache \
+    pcntl \
+    soap \
+    sockets \
+    sodium \
+    xsl \
+    zip \
+    pdo_mysql
 
-# Locate and install latest Alpine-compatible NewRelic, seed with variables to be replaced
-# Requires PHP to already be installed
-RUN NEWRELIC_MUSL_PATH=$(curl -s https://download.newrelic.com/php_agent/release/ | grep 'linux-musl.tar.gz' | cut -d '"' -f2) && \
-    NEWRELIC_PATH="https://download.newrelic.com${NEWRELIC_MUSL_PATH}" && \
-    curl -L ${NEWRELIC_PATH} -o ./root/newrelic-musl.tar.gz && \
-    cd /root && \
-    gzip -dc newrelic-musl.tar.gz | tar xf - && \
-    rm newrelic-musl.tar.gz && \
-    NEWRELIC_DIRECTORY=/root/$(basename $(find . -maxdepth 1 -type d -name newrelic\*)) && \
-    cd $NEWRELIC_DIRECTORY && \
-    echo "\n" | ./newrelic-install install && \
-    chown -R root:root $NEWRELIC_DIRECTORY/agent && \
-    mv $NEWRELIC_DIRECTORY/agent/x64/newrelic-20170718.so /usr/lib/php7/modules/newrelic.so && \
-    rm -rf $NEWRELIC_DIRECTORY/agent/x64 && \
-    # Fix permissions on extracted folder \
-    /bin/bash -e /clean.sh
+RUN pecl channel-update pecl.php.net
+
+# RUN pecl install protobuf  && docker-php-ext-enable protobuf
+# RUN pecl install grpc  && docker-php-ext-enable grpc
+
+
+#RUN NEWRELIC_PATH=https://download.newrelic.com`curl -s https://download.newrelic.com/php_agent/release/ | grep 'linux-musl.tar.gz' | cut -d '"' -f2` && \
+#    NR_DIR=$TMPDIR/newrelic/ && mkdir $NR_DIR && \
+#    curl -L ${NEWRELIC_PATH} -o $NR_DIR/newrelic.tar.gz && \
+#    tar -xvzf $NR_DIR/newrelic.tar.gz -C $NR_DIR --strip 1 && \
+#    echo "\n" | $NR_DIR/newrelic-install install && \
+#    cp $NR_DIR/agent/x64/newrelic-20170718.so /usr/local/lib/php/extensions/no-debug-non-zts-20170718/newrelic.so && \
+#    rm -rf $NR_DIR
+#
+
+
+
+RUN pecl install -o -f redis && docker-php-ext-enable redis
+#RUN pecl install -o -f apcu && docker-php-ext-enable apcu
+
+ARG XDEBUG=0
+ARG XDEBUG_VERSION=3.1.4
+RUN if [ "$XDEBUG" = "1" ]; then \
+      pecl install -o -f xdebug-${XDEBUG_VERSION}  \
+      &&  echo Enable xdebug \
+      && docker-php-ext-enable xdebug;  \
+    fi;
+
+RUN mkdir -p /usr/local/share/misc/php-spx
+RUN if [ "$XDEBUG" = "0" ]; then  \
+      git clone https://github.com/NoiseByNorthwest/php-spx.git  \
+        --depth 1  --single-branch --branch master /usr/src/php/ext/spx  \
+      && docker-php-ext-install -j$(nproc) spx;  \
+    fi;
+
+ARG SWOOLE_VERSION=4.8.6
+RUN mkdir /usr/src/php/ext/swoole && \
+    curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz && \
+    tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole && \
+    docker-php-ext-configure swoole \
+        --enable-http2   \
+        --enable-mysqlnd \
+        --enable-openssl \
+        --enable-sockets --enable-swoole-curl --enable-swoole-json && \
+    docker-php-ext-install -j$(nproc)  swoole
+
+RUN php --version && php -m
+# RUN php -r 'print_r(gd_info());'
+RUN cat /etc/alpine-release
+
+FROM alpine:3.15 AS base
+
+ENV APP_ROOT=/magento
+ENV NOT_ROOT_USER=www-data
+
+
+COPY --from=build /usr/local/bin/php /usr/local/bin/php
+COPY --from=build /usr/local/sbin/php-fpm /usr/local/sbin/php-fpm
+COPY --from=build /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+COPY --from=build /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
+COPY --from=build /usr/local/share/misc/php-spx /usr/local/share/misc/php-spx
+RUN apk add --update --no-cache \
+		ca-certificates \
+		bash \
+		git \
+		vim \
+    unzip \
+		curl \
+		openssh-client \
+		procps \
+		strace \
+		openssl \
+		mysql-client \
+		$( \
+    		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
+    			| tr ',' '\n' \
+    			| sort -u \
+    			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+    			| tr '\n' ' ' \
+    	)
+
+
+# 82 is the standard uid/gid for "www-data" in Alpine
+# https://git.alpinelinux.org/aports/tree/main/apache2/apache2.pre-install?h=3.9-stable
+# https://git.alpinelinux.org/aports/tree/main/lighttpd/lighttpd.pre-install?h=3.9-stable
+# https://git.alpinelinux.org/aports/tree/main/nginx/nginx.pre-install?h=3.9-stable
+#RUN set -eux; \
+#  addgroup --gid 82 $NOT_ROOT_USER && \
+#  adduser  --uid 82 \
+#    --disabled-password \
+#    --home "$APP_ROOT" \
+#    --ingroup "$NOT_ROOT_USER" \
+#    --no-create-home \
+#    "$NOT_ROOT_USER"
+
+
+COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# - Make additional hacks to migrate files from Ubuntu to Alpine folder structure
-RUN cp /etc/php/7.0/mods-available/* $CONF_PHPMODS && \
-    rm $CONF_PHPMODS/00_opcache.ini && \
-    # - Run standard set of tweaks to ensure runs performant, reliably, and consistent between variants
-    touch /var/run/lock && \
-    ln -s /usr/sbin/php-fpm7 /usr/sbin/php-fpm && \
-    /bin/bash -e prep-php.sh
 
-RUN goss -g /tests/php-fpm/7.2-alpine.goss.yaml validate
+#Setup sendmail in php
+RUN echo '#!/usr/bin/php' > /usr/local/bin/sendmail \
+ && chmod +x /usr/local/bin/sendmail
 
-USER $NOT_ROOT_USER:$NOT_ROOT_USER
+# Clean Up
+RUN rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/* /var/tmp/*
 
+# @todo Add test with container/root/tests/php-fpm/base.goss.yaml
+
+### Collapse layers ###
+
+FROM alpine:3.15
+COPY --from=base / .
+
+WORKDIR $APP
+# https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
+STOPSIGNAL SIGQUIT
+
+EXPOSE 9000
+
+
+CMD ["php-fpm", "-R"]
 

@@ -1,23 +1,29 @@
 #!/bin/bash
 
-mutagen daemon start
-dir=$(dirname $0)
-project=$(basename `eval 'cd "$dir/../";pwd 2>/dev/null;cd'`)
+SCRIPT_DIR=$(dirname $0)
+PROJECT_NAME=$(basename `eval 'cd "$SCRIPT_DIR/../";pwd 2>/dev/null;cd'`)
+# go to project root
 cd "$(dirname $0)/../"
+
+mutagen daemon start
+docker-compose exec app killall mutagen-agent
+mutagen sync terminate --label-selector "$PROJECT_NAME"
 
 # sync files from local to docker immediately,
 # local is alpha here, so it will rewrite all your changes made on the docker side
-mutagen sync create src docker://${project}_app_1/magento \
-    --name "$project-to-docker" \
-    --label "$project" \
+mutagen sync create src docker://${PROJECT_NAME}_app_1/magento \
+    --name "$PROJECT_NAME-to-docker" \
+    --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
     --default-file-mode-beta=0666 \
     --default-directory-mode-beta=0777 \
     --sync-mode=one-way-replica  \
     --watch-mode-beta=no-watch  \
     --ignore=.idea \
-    --ignore=bin \
     --ignore=generated \
+    --ignore=app/etc \
+    --ignore=app/code/Magento/TestModule* \
+    --ignore=var \
     --ignore=pub/media \
     --ignore=pub/static \
     --ignore=dev/tests/integration/tmp \
@@ -25,9 +31,19 @@ mutagen sync create src docker://${project}_app_1/magento \
     --ignore=vendor \
     --ignore-vcs
 
-mutagen sync create docker://${project}_app_1/magento/vendor  src/vendor \
-    --name "$project-vendor-from-docker" \
-    --label "$project" \
+mutagen sync create docker://${PROJECT_NAME}_app_1/magento/app/etc  src/app/etc \
+    --name "$PROJECT_NAME-etc-from-docker" \
+    --label "$PROJECT_NAME" \
+    --symlink-mode=posix-raw \
+    --default-file-mode-beta=0666 \
+    --default-directory-mode-beta=0777 \
+    --sync-mode=two-way-resolved  \
+    --ignore=.idea \
+    --ignore-vcs
+
+mutagen sync create docker://${PROJECT_NAME}_app_1/magento/vendor  src/vendor \
+    --name "$PROJECT_NAME-vendor-from-docker" \
+    --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
     --default-file-mode-beta=0666 \
     --default-directory-mode-beta=0777 \
@@ -36,9 +52,9 @@ mutagen sync create docker://${project}_app_1/magento/vendor  src/vendor \
     --ignore=.idea \
     --ignore-vcs
 
-mutagen sync create docker://${project}_app_1/magento/generated  src/generated \
-    --name "$project-generated-from-docker" \
-    --label "$project" \
+mutagen sync create docker://${PROJECT_NAME}_app_1/magento/generated  src/generated \
+    --name "$PROJECT_NAME-generated-from-docker" \
+    --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
     --default-file-mode-beta=0666 \
     --default-directory-mode-beta=0777 \
