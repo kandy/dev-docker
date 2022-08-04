@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+
 
 DOMAIN=mage.perf
 
@@ -33,39 +35,39 @@ done
 
 # mutagen sync flush perf-base
 
-docker-compose exec app bash -c "
+"${MDEV}" exec app bash -c "
   rm -rf generated/*/*
   php bin/magento setup:uninstall -vvv
-  curl -XDELETE http://elastic:9200/_all
   composer install
   rm -rf generated/*/*
+  curl -XDELETE http://elastic:9200/_all
 "
 
-docker-compose exec redis redis-cli FLUSHALL
-docker-compose exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
+"${MDEV}" redis FLUSHALL
+"${MDEV}" exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
-docker-compose exec app php bin/magento setup:install -vvv \
-  --db-name=magento2 \
-  --db-user=root  \
-  --db-password=root \
-  --db-host=db \
-  --base-url=http://${DOMAIN}/ \
-	--use-rewrites=1 \
-	--admin-firstname=Store \
-	--admin-lastname=Owner \
-	--admin-email=admin@example.com \
-	--admin-user=admin \
-	--admin-password=123123q \
-	--cleanup-database \
-	--admin-use-security-key=0 \
-	--backend-frontname=admin \
-	--session-save=redis \
-	--session-save-redis-host=redis \
-	--elasticsearch-host=elastic \
-	--cache-backend=redis \
-	--cache-backend-redis-server=redis
+"${MDEV}" exec app  bash -c "
+  bin/magento setup:install -vvv \
+    --db-name=magento2 \
+    --db-user=root  \
+    --db-password=root \
+    --db-host=db \
+    --base-url=http://${DOMAIN}/ \
+    --use-rewrites=1 \
+    --admin-firstname=Store \
+    --admin-lastname=Owner \
+    --admin-email=admin@example.com \
+    --admin-user=admin \
+    --admin-password=123123q \
+    --cleanup-database \
+    --admin-use-security-key=0 \
+    --backend-frontname=admin \
+    --session-save=redis \
+    --session-save-redis-host=redis \
+    --elasticsearch-host=elastic \
+    --cache-backend=redis \
+    --cache-backend-redis-server=redis
 
-docker-compose exec app bash -c "
   bin/magento cache:disable
   bin/magento s:p:g -s setup/performance-toolkit/profiles/ce/small.xml
   bin/magento cache:enable
@@ -73,5 +75,7 @@ docker-compose exec app bash -c "
   bin/magento config:set dev/grid/async_indexing 1
   bin/magento config:set sales_email/general/async_sending 1
   bin/magento config:set admin/usage/enabled  0
+  bin/magento config:set catalog/seo/generate_category_product_rewrites 0
+  bin/magento indexer:reindex
   bin/magento cache:flush
 "

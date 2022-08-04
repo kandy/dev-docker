@@ -1,6 +1,4 @@
-# Build all needed extesion
-MAINTAINER Andrii Kasian <akasian@adobe.com>
-
+#
 ARG PHP_VERSION=8.1
 
 FROM php:${PHP_VERSION}-fpm-alpine AS build
@@ -96,7 +94,7 @@ RUN php --version && php -m
 # RUN php -r 'print_r(gd_info());'
 RUN cat /etc/alpine-release
 
-FROM alpine:3.15 AS base
+FROM alpine:3.16 AS base
 
 ENV APP_ROOT=/magento
 ENV NOT_ROOT_USER=www-data
@@ -159,10 +157,10 @@ RUN rm -rf /var/cache/apk/* && \
 
 ### Collapse layers ###
 
-FROM alpine:3.15
+FROM alpine:3.16
 COPY --from=base / .
 
-WORKDIR $APP
+WORKDIR ${APP_ROOT}
 # https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
 STOPSIGNAL SIGQUIT
 

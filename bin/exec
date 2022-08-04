@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+m_assumeDocker
+cd $MDEV_DIR
+
+CONTAINER=${1}
+
+
+if [[ ! $(docker compose ps -q $CONTAINER) ]]; then
+    m_fatal "No container found for $CONTAINER service."
+fi
+
+docker compose exec --interactive --tty -- "$@"

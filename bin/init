@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+
+COMMAND="${1}"
+shift
+## sub-command execution
+case "$COMMAND" in
+    template)
+        "${MDEV}" exec app \
+            git clone https://github.com/magento/magento-cloud .  "$@"
+        ;;
+    git)
+        ${MDEV}" exec app git clone https://github.com/magento/magento2.git m2-git
+        ${MDEV}" exec app  bash -c "cp -ra  m2-git/* . && rm -rf m2-git"
+        ;;
+    *)
+        m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV init help\" for usage."
+        ;;
+esac

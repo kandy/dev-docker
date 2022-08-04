@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+trap 'error "$(printf "Command \`%s\` at $BASH_SOURCE:$LINENO failed with exit code $?" "$BASH_COMMAND")"' ERR
+
+## find directory where this script is located following symlinks if neccessary
+readonly MDEV_DIR="$(
+  cd "$(
+    dirname "$(
+      (readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}") \
+        | sed -e "s#^../#$(dirname "$(dirname "${BASH_SOURCE[0]}")")/#"
+    )"
+  )" >/dev/null \
+  && pwd
+)"
+readonly MDEV="$MDEV_DIR/$(basename ${BASH_SOURCE[0]})"
+
+
+source "${MDEV_DIR}/bin/include/base.sh"
+
+## parse first argument as command and determine validity
+if (( "$#" )); then
+  ## local project directory if running within one; don't fail if it can't be found
+  if [[ -f "${MDEV_DIR}/bin/${1}" ]]; then
+     COMMAND="${1}"
+     shift
+     if [[ "${1}" == "help" ]] || [[ "${1}" == "--help" ]]; then
+       ${MDEV_DIR}/m help $COMMAND || exit $? && exit $?
+     fi
+     source "${MDEV_DIR}/bin/${COMMAND}";
+  else
+    echo "No command found"
+  fi
+else
+  echo "HELP"
+fi
+

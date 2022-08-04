@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+
+if (( "$#" )); then
+  ## local project directory if running within one; don't fail if it can't be found
+  if [[ -f "${MDEV_DIR}/bin/.help/${1}" ]]; then
+       echo -e "$(cat "${MDEV_DIR}/bin/.help/${1}")"
+  else
+    echo "No HELP file for ${1} command found"
+  fi
+else
+  echo "HELP for HELP"
+fi

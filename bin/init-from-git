@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-docker-compose exec app git clone https://github.com/magento/magento2.git m2-git
-docker-compose exec app  bash -c "cp -ra  m2-git/* . && rm -rf m2-git"
- 

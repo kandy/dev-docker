@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+
+## load connection information for the mysql service
+DB_CONTAINER=$(docker compose ps -q db)
+if [[ ! ${DB_CONTAINER} ]]; then
+    m_fatal "No container found for db service."
+fi
+
+## Extract DB env variables
+eval "$(
+    docker container inspect ${DB_CONTAINER} --format '
+        {{- range .Config.Env }}{{with split . "=" -}}
+            {{- index . 0 }}='\''{{ range $i, $v := . }}{{ if $i }}{{ $v }}{{ end }}{{ end }}'\''{{println}}
+        {{- end }}{{ end -}}
+    ' | grep "^MYSQL_"
+)"
+
+
+COMMAND="${1}"
+shift
+## sub-command execution
+case "$COMMAND" in
+    sql)
+        "${MDEV}" exec db   \
+           mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}" "$@"
+        ;;
+    run)
+        "${MDEV}" db sql -e "$@"
+        ;;
+    import)
+        LC_ALL=C sed -E 's/DEFINER[ ]*=[ ]*`[^`]+`@`[^`]+`/DEFINER=CURRENT_USER/g' \
+            | LC_ALL=C sed -E '/\@\@(GLOBAL\.GTID_PURGED|SESSION\.SQL_LOG_BIN)/d' \
+            | "${MDEV}" db sql "$@"
+        ;;
+    dump)
+        "${MDEV}" exec db \
+            mysqldump -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}"  "$@"
+        ;;
+    *)
+        m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV db help\" for usage."
+        ;;
+esac
