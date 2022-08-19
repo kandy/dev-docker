@@ -4,3 +4,4 @@ m_assumeDocker
 cd $MDEV_DIR
 docker compose up -d
 "${MDEV}" sync
+cd -

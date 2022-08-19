@@ -31,7 +31,7 @@ APP_CONTAINER="${APP_CONTAINER:1}"
 
 # sync files from local to docker immediately,
 # local is alpha here, so it will rewrite all your changes made on the docker side
-mutagen sync create src docker://${APP_CONTAINER}/magento \
+mutagen sync create ${MDEV_DIR}/src docker://${APP_CONTAINER}/magento \
     --name "$PROJECT_NAME-to-docker" \
     --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
@@ -51,7 +51,7 @@ mutagen sync create src docker://${APP_CONTAINER}/magento \
     --ignore=vendor \
     --ignore-vcs
 
-mutagen sync create docker://${APP_CONTAINER}/magento/app/etc  src/app/etc \
+mutagen sync create docker://${APP_CONTAINER}/magento/app/etc  ${MDEV_DIR}/src/app/etc \
     --name "$PROJECT_NAME-etc-from-docker" \
     --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
@@ -61,7 +61,7 @@ mutagen sync create docker://${APP_CONTAINER}/magento/app/etc  src/app/etc \
     --ignore=.idea \
     --ignore-vcs
 
-mutagen sync create docker://${APP_CONTAINER}/magento/vendor  src/vendor \
+mutagen sync create docker://${APP_CONTAINER}/magento/vendor  ${MDEV_DIR}/src/vendor \
     --name "$PROJECT_NAME-vendor-from-docker" \
     --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
@@ -69,10 +69,9 @@ mutagen sync create docker://${APP_CONTAINER}/magento/vendor  src/vendor \
     --default-directory-mode-beta=0777 \
     --sync-mode=one-way-replica  \
     --watch-mode-beta=no-watch  \
-    --ignore=.idea \
-    --ignore-vcs
+    --ignore=.idea
 
-mutagen sync create docker://${APP_CONTAINER}/magento/generated  src/generated \
+mutagen sync create docker://${APP_CONTAINER}/magento/generated  ${MDEV_DIR}/src/generated \
     --name "$PROJECT_NAME-generated-from-docker" \
     --label "$PROJECT_NAME" \
     --symlink-mode=posix-raw \
@@ -80,5 +79,4 @@ mutagen sync create docker://${APP_CONTAINER}/magento/generated  src/generated \
     --default-directory-mode-beta=0777 \
     --sync-mode=one-way-replica  \
     --watch-mode-beta=no-watch  \
-    --ignore=.idea \
-    --ignore-vcs
+    --ignore=.idea
