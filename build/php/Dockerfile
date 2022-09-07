@@ -1,6 +1,5 @@
 #
 ARG PHP_VERSION=8.1
-ARG APP_ROOT=/magento
 
 
 FROM php:${PHP_VERSION}-fpm-alpine AS build
@@ -162,8 +161,9 @@ FROM alpine:3.16
 COPY --from=base / .
 
 
+ARG APP_ROOT="/magento"
+WORKDIR $APP_ROOT
 
-WORKDIR ${APP_ROOT}
 # https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
 STOPSIGNAL SIGQUIT
 
