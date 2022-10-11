@@ -13,10 +13,6 @@ services:
           - ./xhgui:/xhgui
         environment:
           - VIRTUAL_HOST=mage.perf
-        networks:
-          default:
-            aliases:
-              - "mage.perf"
     app:
         build:
           context: build/php
@@ -92,6 +88,12 @@ services:
               memory: 768M
             reservations:
               memory: 768M
+
+    rabbit:
+        image: rabbitmq:management
+        hostname: rabbitmq
+        expose:
+          - "15672"
 
     fluentbit:
         image: fluent/fluent-bit

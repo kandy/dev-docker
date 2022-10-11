@@ -142,7 +142,7 @@ RUN apk add --update --no-cache \
 
 COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php --  --2.2 --install-dir=/usr/local/bin --filename=composer
 
 
 #Setup sendmail in php

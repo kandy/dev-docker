@@ -36,3 +36,10 @@ function m_assumeDocker {
     m_fatal "Docker does not appear to be running. Please start Docker."
   fi
 }
+
+## return first container name based on service name
+function m_containerNameByService {
+  APP_CONTAINER=$(docker container inspect $(docker compose ps -q $1 ) --format '{{ .Name }}')
+  APP_CONTAINER="${APP_CONTAINER:1}"
+  echo $APP_CONTAINER
+}

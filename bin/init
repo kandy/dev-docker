@@ -6,17 +6,26 @@ shift
 ## sub-command execution
 case "$COMMAND" in
     template)
-        "${MDEV}" exec app \
-            git clone https://github.com/magento/magento-cloud .  "$@"
-        ;;
+        git clone https://github.com/magento/magento-cloud --branch 2.4.5  --depth 1 src
+    ;;
     git)
-        "${MDEV}" exec app bash -c "
-          git clone https://github.com/magento/magento2.git m2-git
-          cp -ra  m2-git/* .
-          rm -rf m2-git
-        "
-        ;;
+        "${MDEV}" sync stop
+        "${MDEV}" exec bash -c "rm -rf *"
+        rm -r src
+        git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
+        find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
+        "${MDEV}" sync
+    ;;
+    git-ee)
+          "${MDEV}" sync stop
+          "${MDEV}" exec bash -c "rm -rf *"
+          rm -r src
+          git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
+          git clone --branch 2.4-develop --depth 100 git@github.com:magento-commerce/magento2ee.git src/ee
+          find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
+          "${MDEV}" sync
+    ;;
     *)
         m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV init help\" for usage."
-        ;;
+    ;;
 esac
