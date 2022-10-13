@@ -2,7 +2,7 @@
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
 
-DOMAIN=mage.perf
+DOMAIN="$(m_projectName).mage.perf"
 
 while getopts "hp:i:-:" OPT; do
     if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
@@ -41,12 +41,14 @@ done
   composer install
   rm -rf generated/*/*
   curl -XDELETE http://elastic:9200/_all
+  curl http://elastic:9200/_cluster/health
 "
 
 "${MDEV}" redis FLUSHALL
 "${MDEV}" exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
 "${MDEV}" exec app  bash -c "
+  set -e
   bin/magento setup:install -vvv \
     --db-name=magento2 \
     --db-user=root  \
@@ -64,7 +66,8 @@ done
     --backend-frontname=admin \
     --session-save=redis \
     --session-save-redis-host=redis \
-    --elasticsearch-host=elastic \
+    --search-engine=opensearch \
+    --opensearch-host=elastic \
     --cache-backend=redis \
     --cache-backend-redis-server=redis
 

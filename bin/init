@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
-COMMAND="${1}"
+COMMAND="${1:-template}"
 shift
 ## sub-command execution
 case "$COMMAND" in
@@ -26,6 +26,6 @@ case "$COMMAND" in
           "${MDEV}" sync
     ;;
     *)
-        m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV init help\" for usage."
+        m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV help init\" for usage."
     ;;
 esac

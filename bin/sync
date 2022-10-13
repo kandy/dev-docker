@@ -20,7 +20,7 @@ fi
 ## daemon start
 mutagen daemon start
 
-PROJECT_NAME=$(docker compose ls -q)
+PROJECT_NAME=$(m_projectName)
 
 ## "${MDEV}" exec app killall mutagen-agent
 APP_CONTAINER=$(m_containerNameByService "app")

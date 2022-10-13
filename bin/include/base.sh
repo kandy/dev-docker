@@ -43,3 +43,9 @@ function m_containerNameByService {
   APP_CONTAINER="${APP_CONTAINER:1}"
   echo $APP_CONTAINER
 }
+
+## return project name (aka root folder name)
+function m_projectName {
+  PROJECT_NAME=$(docker compose ls -q)
+  echo $PROJECT_NAME
+}
