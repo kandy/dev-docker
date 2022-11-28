@@ -39,13 +39,16 @@ done
   rm -rf generated/*/*
   php bin/magento setup:uninstall -vvv
   composer install
-  rm -rf generated/*/*
+  rm -rf generated/*/*  app/etc/env.php app/etc/config.php
   curl -XDELETE http://elastic:9200/_all
   curl http://elastic:9200/_cluster/health
 "
 
 "${MDEV}" redis FLUSHALL
 "${MDEV}" exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
+
+SEARCH="--search-engine=elasticsearch7 --elasticsearch-host=elastic"
+# " --search-engine=opensearch --opensearch-host=elastic"
 
 "${MDEV}" exec app  bash -c "
   set -e
@@ -66,8 +69,7 @@ done
     --backend-frontname=admin \
     --session-save=redis \
     --session-save-redis-host=redis \
-    --search-engine=opensearch \
-    --opensearch-host=elastic \
+    ${SEARCH}  \
     --cache-backend=redis \
     --cache-backend-redis-server=redis
 

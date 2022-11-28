@@ -46,6 +46,6 @@ function m_containerNameByService {
 
 ## return project name (aka root folder name)
 function m_projectName {
-  PROJECT_NAME=$(docker compose ls -q)
+  PROJECT_NAME=$(docker compose ls | grep "${MDEV_DIR}" | awk  '{print $1}')
   echo $PROJECT_NAME
 }
