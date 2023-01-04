@@ -93,8 +93,8 @@ services:
     rabbit:
         image: rabbitmq:management
         hostname: rabbitmq
-        expose:
-          - "15672"
+        ports:
+          - "15672:15672"
 
     fluentbit:
         image: fluent/fluent-bit

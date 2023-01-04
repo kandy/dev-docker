@@ -47,8 +47,10 @@ done
 "${MDEV}" redis FLUSHALL
 "${MDEV}" exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
-SEARCH="--search-engine=elasticsearch7 --elasticsearch-host=elastic"
+SEARCH=" --search-engine=elasticsearch7 --elasticsearch-host=elastic "
 # " --search-engine=opensearch --opensearch-host=elastic"
+
+AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password guest "
 
 "${MDEV}" exec app  bash -c "
   set -e
@@ -70,6 +72,7 @@ SEARCH="--search-engine=elasticsearch7 --elasticsearch-host=elastic"
     --session-save=redis \
     --session-save-redis-host=redis \
     ${SEARCH}  \
+    ${AMQP}  \
     --cache-backend=redis \
     --cache-backend-redis-server=redis
 
