@@ -10,20 +10,20 @@ case "$COMMAND" in
     ;;
     git)
         "${MDEV}" sync stop
-        "${MDEV}" exec bash -c "rm -rf *"
+        "${MDEV}" exec app bash -c "rm -rf *"
         rm -r src
         git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
         find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
         "${MDEV}" sync
     ;;
     git-ee)
-          "${MDEV}" sync stop
-          "${MDEV}" exec bash -c "rm -rf *"
-          rm -r src
-          git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
-          git clone --branch 2.4-develop --depth 100 git@github.com:magento-commerce/magento2ee.git src/ee
-          find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
-          "${MDEV}" sync
+        "${MDEV}" sync stop
+        "${MDEV}" exec app bash -c "rm -rf *"
+        rm -r src
+        git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
+        git clone --branch 2.4-develop --depth 100 git@github.com:magento-commerce/magento2ee.git src/ee
+        find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
+        "${MDEV}" sync
     ;;
     *)
         m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV help init\" for usage."
