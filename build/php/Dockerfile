@@ -10,13 +10,14 @@ RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
     libsodium-dev \
     libxslt-dev \
     icu-dev \
-    libressl-dev \
+ #   libressl-dev \
     libzip-dev \
     oniguruma-dev \
 # swoole dependensies
     curl-dev openssl-dev pcre-dev pcre2-dev zlib-dev \
-# grpc dependensies
-    linux-headers
+    && echo ok
+    # grpc dependensies
+#    linux-headers
 
 # for local only ENV CFLAGS="-O3 -march=native"
 RUN docker-php-source extract
@@ -95,7 +96,7 @@ RUN php --version && php -m
 # RUN php -r 'print_r(gd_info());'
 RUN cat /etc/alpine-release
 
-FROM alpine:3.16 AS base
+FROM alpine:3.17 AS base
 
 ENV NOT_ROOT_USER=www-data
 

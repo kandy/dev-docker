@@ -40,7 +40,7 @@ services:
           - ~/.composer:/root/.composer:delegated
 
     db:
-        image: mariadb:10.4
+        image: mariadb:10.6
 #        image: mysql:8
 #        command: --default-authentication-plugin=mysql_native_password
         command:
@@ -49,8 +49,8 @@ services:
           - --optimizer-use-condition-selectivity=1
 #          - "--optimizer-switch=rowid_filter=off"
           - --join-buffer-size=1048576
-        ports:
-          - "3306:3306"
+#        ports:
+#          - "3306:3306"
         environment:
           - MYSQL_ROOT_PASSWORD=root
           - MYSQL_USER=magento
@@ -93,8 +93,8 @@ services:
     rabbit:
         image: rabbitmq:management
         hostname: rabbitmq
-        ports:
-          - "15672:15672"
+#        ports:
+#          - "15672:15672"
 
     fluentbit:
         image: fluent/fluent-bit
