@@ -2,9 +2,6 @@ version: '3.6'
 services:
     webserver:
         image: nginx:alpine
-        ports:
-          - "80:80"
-        hostname: mage.perf
         volumes:
           - project-data:/magento
           - ./etc/nginx/magento.conf:/etc/nginx/conf.d/default.conf
@@ -12,6 +9,13 @@ services:
           - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
         environment:
           - VIRTUAL_HOST=mage.perf
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`perfstudio.mage.perf`)"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web"
+        networks:
+          - default
+          - ingress_web
     app:
         build:
           context: build/php
@@ -47,10 +51,27 @@ services:
           - --default-authentication-plugin=mysql_native_password
           - --max-allowed-packet=268435456
           - --optimizer-use-condition-selectivity=1
-#          - "--optimizer-switch=rowid_filter=off"
+          - --optimizer-switch=rowid_filter=off
           - --join-buffer-size=1048576
-#        ports:
-#          - "3306:3306"
+          - --optimizer_search_depth=6
+          - --innodb_stats_persistent=false
+#          - --innodb_lru_scan_depth=100
+#          - --optimizer-max-sel-arg-weight=512
+          - --max-heap-table-size=33554432
+          - --max-long-data-size=268435456
+          - --tmp-memory-table-size=33554432
+          - --tmp-table-size=33554432
+          - --table-open-cache=400
+          - --innodb-open-files=400
+          - --innodb-change-buffering=all
+          - --innodb-lru-scan-depth=1024
+          - --innodb-io-capacity=400
+          - --query-cache-limit=131072
+          - --query-cache-size=67108864
+          - --query-cache-type=ON
+          - --read-buffer-size=2097152
+          - --read-rnd-buffer-size=1048576
+          - --sort-buffer-size=4194304
         environment:
           - MYSQL_ROOT_PASSWORD=root
           - MYSQL_USER=magento
@@ -108,3 +129,5 @@ volumes:
 
 networks:
     default:
+    ingress_web:
+      external: true

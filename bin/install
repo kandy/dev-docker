@@ -87,3 +87,4 @@ AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password g
   bin/magento indexer:reindex
   bin/magento cache:flush
 "
+echo "Store URL http://${DOMAIN}/"

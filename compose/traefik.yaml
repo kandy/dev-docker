@@ -1,0 +1,25 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: "traefik:v2.9"
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.tls=false
+      - traefik.http.routers.traefik.rule=Host(`${INGRESS_SERVICE_DOMAIN:-mage.perf}`)
+      - traefik.http.routers.traefik.service=api@internal
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - web
+networks:
+  web:
+

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
-m_assumeDocker
-cd $MDEV_DIR
-"${MDEV}" proxy
-docker compose up -d
-"${MDEV}" sync
-cd -
+
+docker compose --project-name ingress  -f "${MDEV_DIR}/compose/traefik.yaml" up -d
