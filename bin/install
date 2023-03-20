@@ -37,7 +37,7 @@ done
 
 "${MDEV}" exec app bash -c "
   rm -rf generated/*/*
-  php bin/magento setup:uninstall -vvv
+  php bin/magento setup:uninstall -vvv --no-interaction
   composer install
   rm -rf generated/*/*  app/etc/env.php app/etc/config.php
   curl -XDELETE http://elastic:9200/_all
@@ -83,6 +83,7 @@ AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password g
   bin/magento config:set dev/grid/async_indexing 1
   bin/magento config:set sales_email/general/async_sending 1
   bin/magento config:set admin/usage/enabled  0
+  bin/magento config:set analytics/subscription/enabled 0
   bin/magento config:set catalog/seo/generate_category_product_rewrites 0
   bin/magento indexer:reindex
   bin/magento cache:flush

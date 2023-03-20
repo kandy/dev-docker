@@ -111,7 +111,7 @@ RUN apk add --update --no-cache \
 		bash \
 		git \
 		vim \
-    unzip \
+        unzip \
 		curl \
 		openssh-client \
 		procps \

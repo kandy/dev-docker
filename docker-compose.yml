@@ -8,14 +8,16 @@ services:
           - ./etc/nginx/xhgui.conf:/etc/nginx/conf.d/xhgui.conf
           - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
         environment:
-          - VIRTUAL_HOST=mage.perf
+          - VIRTUAL_HOST=${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}
         labels:
           - "traefik.enable=true"
-          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`perfstudio.mage.perf`)"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}`)"
           - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web"
         networks:
-          - default
-          - ingress_web
+          default:
+              aliases:
+                - "${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}"
+          ingress_web:
     app:
         build:
           context: build/php
@@ -94,7 +96,7 @@ services:
           - bootstrap.memory_lock=true
           - plugins.security.disabled=true
           - plugins.security.ssl.http.enabled=false
-          - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+          - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
         ulimits:
           memlock:
             soft: -1
