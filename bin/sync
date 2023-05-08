@@ -35,6 +35,7 @@ case "$COMMAND" in
     ;;
 
     start)
+        mutagen sync terminate --label-selector "$PROJECT_NAME"
         # sync files from local to docker immediately,
         # local is alpha here, so it will rewrite all your changes made on the docker side
         mutagen sync create ${MDEV_DIR}/src docker://${APP_CONTAINER}/magento \

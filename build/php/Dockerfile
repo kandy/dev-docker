@@ -81,16 +81,22 @@ RUN if [ "$XDEBUG" = "0" ]; then  \
       && docker-php-ext-install -j$(nproc) spx;  \
     fi;
 
-ARG SWOOLE_VERSION=4.8.6
-RUN mkdir /usr/src/php/ext/swoole && \
-    curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz && \
-    tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole && \
-    docker-php-ext-configure swoole \
-        --enable-http2   \
+ARG SWOOLE_VERSION=5.0.2
+RUN mkdir /usr/src/php/ext/swoole  \
+    && curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz  \
+    && tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole  \
+    && docker-php-ext-configure swoole \
         --enable-mysqlnd \
         --enable-openssl \
-        --enable-sockets --enable-swoole-curl --enable-swoole-json && \
-    docker-php-ext-install -j$(nproc)  swoole
+        --enable-sockets --enable-swoole-curl  \
+    && docker-php-ext-install -j$(nproc)  swoole
+
+RUN mkdir /usr/src/php/ext/meminfo  \
+    && git clone  https://github.com/BitOne/php-meminfo.git  /tmp/meminfo \
+    && cp -R /tmp/meminfo/extension/* /usr/src/php/ext/meminfo && ls /usr/src/php/ext/meminfo \
+    && docker-php-ext-configure meminfo  \
+    && docker-php-ext-install -j$(nproc)  meminfo
+
 
 RUN php --version && php -m
 # RUN php -r 'print_r(gd_info());'
@@ -145,14 +151,13 @@ COPY env/php-fpm.conf /usr/local/etc/php-fpm.conf
 
 RUN curl -sS https://getcomposer.org/installer | php --  --2.2 --install-dir=/usr/local/bin --filename=composer
 
-
 #Setup sendmail in php
-RUN echo '#!/usr/bin/php' > /usr/local/bin/sendmail \
- && chmod +x /usr/local/bin/sendmail
+RUN echo "#!/usr/bin/php\nfile_put_contents('/tmp/mail', stream_get_contents(STDIN) . PHP_EOL);" > /usr/local/bin/sendmail \
+    && chmod +x /usr/local/bin/sendmail
 
 # Clean Up
-RUN rm -rf /var/cache/apk/* && \
-    rm -rf /tmp/* /var/tmp/*
+RUN rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/* /var/tmp/*
 
 # @todo Add test with container/root/tests/php-fpm/base.goss.yaml
 
