@@ -96,7 +96,7 @@ services:
           - bootstrap.memory_lock=true
           - plugins.security.disabled=true
           - plugins.security.ssl.http.enabled=false
-          - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
+          - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
         ulimits:
           memlock:
             soft: -1

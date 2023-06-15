@@ -87,6 +87,12 @@ case "$COMMAND" in
             --sync-mode=one-way-replica  \
             --watch-mode-beta=no-watch  \
             --ignore=.idea
+
+        mutagen sync flush --label-selector "$PROJECT_NAME"
+   ;;
+
+   flush)
+        mutagen sync flush --label-selector "$PROJECT_NAME"
    ;;
 esac
 
