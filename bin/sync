@@ -23,7 +23,7 @@ mutagen daemon start
 PROJECT_NAME=$(m_projectName)
 
 ## "${MDEV}" exec app killall mutagen-agent
-APP_CONTAINER=$(m_containerNameByService "app")
+
 
 COMMAND="${1:-start}"
 
@@ -36,6 +36,9 @@ case "$COMMAND" in
 
     start)
         mutagen sync terminate --label-selector "$PROJECT_NAME"
+
+        APP_CONTAINER=$(m_containerNameByService "app")
+
         # sync files from local to docker immediately,
         # local is alpha here, so it will rewrite all your changes made on the docker side
         mutagen sync create ${MDEV_DIR}/src docker://${APP_CONTAINER}/magento \
@@ -44,7 +47,7 @@ case "$COMMAND" in
             --symlink-mode=posix-raw \
             --default-file-mode-beta=0666 \
             --default-directory-mode-beta=0777 \
-            --sync-mode=two-way-safe  \
+            --sync-mode=two-way-resolved  \
             --watch-mode-beta=no-watch  \
             --ignore=.idea \
             --ignore=generated \
