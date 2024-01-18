@@ -48,7 +48,6 @@ services:
     db:
         image: mariadb:10.6
 #        image: mysql:8
-#        command: --default-authentication-plugin=mysql_native_password
         command:
           - --default-authentication-plugin=mysql_native_password
           - --max-allowed-packet=268435456
@@ -87,16 +86,19 @@ services:
         hostname: redis
 
     elastic:
-        image: opensearchproject/opensearch:1.2.1
+        image: opensearchproject/opensearch:2.9.0
         hostname: elastic
-        restart: always
         environment:
           - discovery.type=single-node
-          - cluster.name=elastic-cluster
+          - cluster.name=elastic
           - bootstrap.memory_lock=true
           - plugins.security.disabled=true
           - plugins.security.ssl.http.enabled=false
-          - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+          - "OPENSEARCH_JAVA_OPTS=-Xms1G -Xmx1G"
+          - DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI=true
+          - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+          - DISABLE_INSTALL_DEMO_CONFIG=true
+          - OPENSEARCH_TMPDIR=/usr/share/opensearch/tmp
         ulimits:
           memlock:
             soft: -1
@@ -107,15 +109,19 @@ services:
         deploy:
           resources:
             limits:
-              memory: 768M
+              memory: 1536M
             reservations:
               memory: 768M
         volumes:
           - elastic-data:/usr/share/opensearch/data
+          - elastic-data:/usr/share/opensearch/tmp
 
     rabbit:
         image: rabbitmq:management
         hostname: rabbitmq
+        environment:
+          - RABBITMQ_USER=guest
+          - RABBITMQ_PASSWORD=guest
 #        ports:
 #          - "15672:15672"
 

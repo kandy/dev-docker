@@ -1,8 +1,8 @@
 #
 ARG PHP_VERSION=8.2
+ARG ALPINE_VERSION=3.18
 
-
-FROM php:${PHP_VERSION}-fpm-alpine AS build
+FROM php:${PHP_VERSION}-fpm-alpine${ALPINE_VERSION} AS build
 
 
 RUN apk add --update --no-cache ${PHPIZE_DEPS} bash git tar \
@@ -42,7 +42,6 @@ RUN docker-php-ext-install -j$(nproc) \
     opcache \
     pcntl \
     soap \
-    sockets \
     sodium \
     xsl \
     zip \
@@ -76,14 +75,14 @@ RUN if [ "$XDEBUG" = "1" ]; then \
       && docker-php-ext-enable xdebug;  \
     fi;
 
-RUN mkdir -p /usr/local/share/misc/php-spx
-RUN if [ "$XDEBUG" = "0" ]; then  \
+RUN mkdir -p /usr/local/share/misc/php-spx && \
+   if [ "$XDEBUG" = "0" ]; then  \
       git clone https://github.com/NoiseByNorthwest/php-spx.git  \
         --depth 1  --single-branch --branch master /usr/src/php/ext/spx  \
       && docker-php-ext-install -j$(nproc) spx;  \
     fi;
 
-ARG SWOOLE_VERSION=5.0.2
+ARG SWOOLE_VERSION=5.1.1
 RUN mkdir /usr/src/php/ext/swoole  \
     && curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz  \
     && tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole  \
@@ -115,13 +114,13 @@ COPY --from=build /usr/local/sbin/php-fpm /usr/local/sbin/php-fpm
 COPY --from=build /usr/local/lib/php/extensions /usr/local/lib/php/extensions
 COPY --from=build /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
 COPY --from=build /usr/local/share/misc/php-spx /usr/local/share/misc/php-spx
-RUN
+
 RUN apk add --update --no-cache \
 		ca-certificates \
 		bash \
 		git \
 		vim \
-        unzip \
+    unzip \
 		curl \
 		openssh-client \
 		procps \
@@ -129,9 +128,9 @@ RUN apk add --update --no-cache \
 		openssl \
 		mysql-client \
 		$( \
-    		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
-    			| tr ',' '\n' \
-    			| sort -u \
+          scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
+            | tr ',' '\n' \
+            | sort -u \
     			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
     			| tr '\n' ' ' \
     	)
@@ -167,7 +166,7 @@ RUN rm -rf /var/cache/apk/* \
 
 ### Collapse layers ###
 
-FROM alpine:3.18
+FROM alpine:${ALPINE_VERSION} AS final
 COPY --from=base / .
 
 
