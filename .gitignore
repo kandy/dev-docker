@@ -2,3 +2,4 @@
 .vscode/
 tmp/
 etc/php/auth.json
+.docker/traefik/

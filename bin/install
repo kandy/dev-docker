@@ -2,7 +2,8 @@
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
 
-DOMAIN="$(m_projectName).mage.perf"
+PROJECT_NAME="$(m_projectName)"
+DOMAIN="${INGRESS_SERVICE_DOMAIN:-ccsaas.test}"
 
 while getopts "hp:i:-:" OPT; do
     if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
@@ -33,6 +34,8 @@ while getopts "hp:i:-:" OPT; do
     esac
 done
 
+BASE_URL="${MAGENTO_BASE_URL:-https://${DOMAIN}/${PROJECT_NAME}/}"
+
 # mutagen sync flush perf-base
 
 "${MDEV}" exec app bash -c "
@@ -59,7 +62,7 @@ AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password g
     --db-user=root  \
     --db-password=root \
     --db-host=db \
-    --base-url=http://${DOMAIN}/ \
+    --base-url=${BASE_URL} \
     --use-rewrites=1 \
     --admin-firstname=Store \
     --admin-lastname=Owner \
@@ -88,4 +91,4 @@ AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password g
   bin/magento indexer:reindex
   bin/magento cache:flush
 "
-echo "Store URL http://${DOMAIN}/"
+echo "Store URL ${BASE_URL}"

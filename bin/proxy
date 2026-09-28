@@ -1,4 +1,32 @@
 #!/usr/bin/env bash
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
-docker compose --project-name ingress  -f "${MDEV_DIR}/compose/traefik.yaml" up -d
+readonly INGRESS_NETWORK=traefik-ingress
+readonly INGRESS_PROJECT=perfstudio-ingress
+readonly TRAEFIK_CERT_DIR="${MDEV_DIR}/.docker/traefik"
+
+docker network inspect "${INGRESS_NETWORK}" >/dev/null 2>&1 ||
+  docker network create "${INGRESS_NETWORK}" >/dev/null
+
+if [ -n "$(docker ps -q --filter label=com.docker.compose.service=traefik --filter network="${INGRESS_NETWORK}")" ]; then
+  echo "Using the existing Traefik gateway on the ${INGRESS_NETWORK} network."
+  exit 0
+fi
+
+mkdir -p "${TRAEFIK_CERT_DIR}"
+if [ ! -s "${TRAEFIK_CERT_DIR}/ccsaas.test.crt" ] || [ ! -s "${TRAEFIK_CERT_DIR}/ccsaas.test.key" ]; then
+  if ! command -v openssl >/dev/null 2>&1; then
+    >&2 echo "openssl is required to create the local Traefik certificate."
+    exit 1
+  fi
+  openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+    -keyout "${TRAEFIK_CERT_DIR}/ccsaas.test.key" \
+    -out "${TRAEFIK_CERT_DIR}/ccsaas.test.crt" \
+    -subj "/CN=ccsaas.test" \
+    -addext "subjectAltName=DNS:ccsaas.test" >/dev/null 2>&1
+fi
+
+TRAEFIK_CERT_DIR="${TRAEFIK_CERT_DIR}" \
+  docker compose -p "${INGRESS_PROJECT}" --project-directory "${MDEV_DIR}" \
+    -f "${MDEV_DIR}/compose/traefik.yaml" up -d
+echo "Standalone Traefik gateway is running on the ${INGRESS_NETWORK} network."

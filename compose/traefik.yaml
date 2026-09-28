@@ -1,25 +1,29 @@
-version: "3.6"
-
+# Standalone Traefik v3 gateway for this checkout.
+#
+# The traefik-ingress network is deliberately named so another checkout can
+# join this gateway when both projects are run together. Start this stack with
+# bin/proxy; it will reuse an already-running gateway on the same network.
 services:
   traefik:
-    image: "traefik:v2.10"
+    image: traefik:v3.7.7
+    hostname: traefik
     command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
+      - "--configFile=/etc/traefik/static.yml"
     ports:
       - "80:80"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.tls=false
-      - traefik.http.routers.traefik.rule=Host(`${INGRESS_SERVICE_DOMAIN:-mage.perf}`)
-      - traefik.http.routers.traefik.service=api@internal
+      - "443:443"
+      - "127.0.0.1:8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./etc/traefik/static.yml:/etc/traefik/static.yml:ro"
+      - "./etc/traefik/dynamic:/etc/traefik/dynamic:ro"
+      - "${TRAEFIK_CERT_DIR:-./.docker/traefik}/ccsaas.test.crt:/certs/ccsaas.test.crt:ro"
+      - "${TRAEFIK_CERT_DIR:-./.docker/traefik}/ccsaas.test.key:/certs/ccsaas.test.key:ro"
     networks:
-      - web
-networks:
-  web:
+      - traefik-ingress
+    restart: unless-stopped
 
+networks:
+  traefik-ingress:
+    external: true
+    name: traefik-ingress

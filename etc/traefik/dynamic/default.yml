@@ -1,0 +1,9 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/ccsaas.test.crt
+        keyFile: /certs/ccsaas.test.key
+  certificates:
+    - certFile: /certs/ccsaas.test.crt
+      keyFile: /certs/ccsaas.test.key

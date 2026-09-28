@@ -9,17 +9,22 @@ services:
         depends_on:
           app:
             condition: service_started
-        environment:
-          - VIRTUAL_HOST=${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}
         labels:
           - "traefik.enable=true"
-          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}`)"
-          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web"
+          - "traefik.docker.network=traefik-ingress"
+          - "traefik.http.services.${COMPOSE_PROJECT_NAME}-web.loadbalancer.server.port=80"
+          - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-web-strip.stripprefix.prefixes=/${COMPOSE_PROJECT_NAME}"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.rule=Host(`ccsaas.test`) && (PathPrefix(`/${COMPOSE_PROJECT_NAME}/`) || Path(`/${COMPOSE_PROJECT_NAME}`))"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.entrypoints=websecure"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.tls=true"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.service=${COMPOSE_PROJECT_NAME}-web"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.middlewares=${COMPOSE_PROJECT_NAME}-web-strip"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.priority=20"
         networks:
           default:
               aliases:
-                - "${COMPOSE_PROJECT_NAME}.${INGRESS_SERVICE_DOMAIN:-mage.perf}"
-          ingress_web:
+                - "${COMPOSE_PROJECT_NAME}.ccsaas.test"
+          traefik-ingress: {}
     app:
         build:
           context: build/php
@@ -178,5 +183,6 @@ volumes:
 
 networks:
     default:
-    ingress_web:
+    traefik-ingress:
       external: true
+      name: traefik-ingress
