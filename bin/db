@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
-
 ## load connection information for the mysql service
 DB_CONTAINER=$(docker compose ps -q db)
 if [[ ! ${DB_CONTAINER} ]]; then
@@ -34,6 +33,7 @@ case "$COMMAND" in
             | docker compose exec -T db mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}"
         ;;
     dump)
+        set +x
         "${MDEV}" exec db \
             mysqldump -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}"  "$@"
         ;;

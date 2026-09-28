@@ -71,7 +71,7 @@ case "$COMMAND" in
             --ignore=.idea \
             --ignore-vcs
 
-        mutagen sync create docker://${APP_CONTAINER}/magento/vendor  ${MDEV_DIR}/src/vendor \
+        mutagen sync create ${MDEV_DIR}/src/vendor  docker://${APP_CONTAINER}/magento/vendor  \
             --name "$PROJECT_NAME-vendor-from-docker" \
             --label "$PROJECT_NAME" \
             --symlink-mode=posix-raw \

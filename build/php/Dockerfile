@@ -1,6 +1,6 @@
 #
-ARG PHP_VERSION=8.1
-ARG ALPINE_VERSION=3.18
+ARG PHP_VERSION=8.3
+ARG ALPINE_VERSION=3.20
 
 FROM php:${PHP_VERSION}-fpm-alpine${ALPINE_VERSION} AS build
 
@@ -68,7 +68,7 @@ RUN pecl install -o -f redis && docker-php-ext-enable redis
 #RUN pecl install -o -f apcu && docker-php-ext-enable apcu
 
 ARG XDEBUG=0
-ARG XDEBUG_VERSION=3.2.2
+ARG XDEBUG_VERSION=3.3.2
 RUN if [ "$XDEBUG" = "1" ]; then \
       pecl install -o -f xdebug-${XDEBUG_VERSION}  \
       &&  echo Enable xdebug \
@@ -103,7 +103,7 @@ RUN php --version && php -m
 # RUN php -r 'print_r(gd_info());'
 RUN cat /etc/alpine-release
 
-FROM alpine:3.18 AS base
+FROM alpine:${ALPINE_VERSION} AS base
 
 ENV NOT_ROOT_USER=www-data
 
@@ -180,4 +180,3 @@ EXPOSE 9000
 
 
 CMD ["php-fpm", "-R"]
-
