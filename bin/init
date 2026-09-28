@@ -9,21 +9,17 @@ case "$COMMAND" in
         git clone https://github.com/magento/magento-cloud --branch 2.4.5  --depth 1 src
     ;;
     git)
-        "${MDEV}" sync stop
-        "${MDEV}" exec app bash -c "rm -rf *"
-        rm -r src
+        "${MDEV}" exec app bash -c "rm -rf *" || echo 'App is not running'
+        rm -rf src
         git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
         find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
-        "${MDEV}" sync
     ;;
     git-ee)
-        "${MDEV}" sync stop
-        "${MDEV}" exec app bash -c "rm -rf *"
-        rm -r src
-        git clone --branch 2.4-develop --depth 100 https://github.com/magento/magento2.git src
+        "${MDEV}" exec app bash -c "rm -rf *" || echo 'App is not running'
+        rm -rf src
+        git clone --branch 2.4-develop --depth 100 git@github.com:magento-commerce/magento2ce.git src
         git clone --branch 2.4-develop --depth 100 git@github.com:magento-commerce/magento2ee.git src/ee
         find src -d 1 | xargs -I{} docker cp {}  "$(m_containerNameByService "app"):/magento"
-        "${MDEV}" sync
     ;;
     *)
         m_fatal "The command \"${COMMAND}\" does not exist. Please use \"$MDEV help init\" for usage."

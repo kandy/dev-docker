@@ -4,5 +4,4 @@ m_assumeDocker
 cd $MDEV_DIR
 "${MDEV}" proxy
 docker compose up -d
-# "${MDEV}" sync
 cd -
