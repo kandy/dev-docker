@@ -48,10 +48,9 @@ BASE_URL="${MAGENTO_BASE_URL:-https://${DOMAIN}/${PROJECT_NAME}/}"
 "
 
 "${MDEV}" redis FLUSHALL
-"${MDEV}" exec db mysql -uroot -proot -e "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
+#"${MDEV}" sql "DROP DATABASE IF EXISTS magento2; CREATE DATABASE IF NOT EXISTS magento2;"
 
-# SEARCH=" --search-engine=opensearch --opensearch-host=elastic "
-SEARCH=" --search-engine=elasticsearch7 --elasticsearch-host=elastic  --es-hosts='elastic:9200;' "
+SEARCH=" --search-engine=opensearch --opensearch-host=elastic "
 
 AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password guest "
 
@@ -69,7 +68,6 @@ AMQP="  --amqp-host rabbit --amqp-port 5672  --amqp-user guest --amqp-password g
     --admin-email=admin@example.com \
     --admin-user=admin \
     --admin-password=123123q \
-    --cleanup-database \
     --admin-use-security-key=0 \
     --backend-frontname=admin \
     --session-save=redis \

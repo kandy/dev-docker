@@ -2,7 +2,7 @@ services:
     webserver:
         image: nginx:1.28-alpine
         volumes:
-          - project-data:/magento
+          - ./src:/magento:delegated
           - ./etc/nginx/magento.conf:/etc/nginx/conf.d/default.conf
           - ./etc/nginx/xhgui.conf:/etc/nginx/conf.d/xhgui.conf
           - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
@@ -14,7 +14,7 @@ services:
           - "traefik.docker.network=traefik-ingress"
           - "traefik.http.services.${COMPOSE_PROJECT_NAME}-web.loadbalancer.server.port=80"
           - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-web-strip.stripprefix.prefixes=/${COMPOSE_PROJECT_NAME}"
-          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.rule=Host(`ccsaas.test`) && (PathPrefix(`/${COMPOSE_PROJECT_NAME}/`) || Path(`/${COMPOSE_PROJECT_NAME}`))"
+          - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.rule=Host(`${COMPOSE_PROJECT_NAME}.ccsaas.test`) || Host(`ccsaas.test`) && (PathPrefix(`/${COMPOSE_PROJECT_NAME}/`) || Path(`/${COMPOSE_PROJECT_NAME}`))"
           - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.entrypoints=websecure"
           - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.tls=true"
           - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-web.service=${COMPOSE_PROJECT_NAME}-web"
@@ -32,7 +32,13 @@ services:
           args:
             XDEBUG: 0
         hostname: app
-        privileged: true
+        user: "${U_ID}"
+#        privileged: true
+        environment:
+            MAGENTO_DC_WEB__SECURE__BASE_URL: ${MAGENTO_DC_WEB__SECURE__BASE_URL:-https://ccsaas.test/${COMPOSE_PROJECT_NAME}/}
+            MAGENTO_DC_WEB__COOKIE__COOKIE_PATH: "/${COMPOSE_PROJECT_NAME}/"
+            MAGENTO_DC_WEB__URL__REDIRECT_TO_BASE: "0"
+
         depends_on:
           db:
             condition: service_healthy
@@ -43,7 +49,7 @@ services:
           rabbit:
             condition: service_healthy
         volumes:
-          - project-data:/magento
+          - ./src:/magento:delegated
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ~/.ssh:/root/.ssh:ro
           -  ~/.composer:/root/.composer:delegated
@@ -65,7 +71,7 @@ services:
           rabbit:
             condition: service_healthy
         volumes:
-          - project-data:/magento
+          - ./src:/magento:delegated
           - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
           - ~/.ssh:/root/.ssh:ro
           - ~/.composer:/root/.composer:delegated

@@ -12,7 +12,7 @@ readonly MDEV_DIR="$(
   && pwd
 )"
 readonly MDEV="$MDEV_DIR/$(basename ${BASH_SOURCE[0]})"
-
+export U_ID=$(id -u)
 
 source "${MDEV_DIR}/bin/include/base.sh"
 

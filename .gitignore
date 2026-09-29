@@ -4,3 +4,4 @@ tmp/
 src
 etc/php/auth.json
 .docker/traefik/
+.env

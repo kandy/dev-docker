@@ -1,6 +1,6 @@
 #
-ARG PHP_VERSION=8.3
-ARG ALPINE_VERSION=3.20
+ARG PHP_VERSION=8.4
+ARG ALPINE_VERSION=3.24
 
 FROM php:${PHP_VERSION}-fpm-alpine${ALPINE_VERSION} AS build
 
@@ -35,6 +35,7 @@ esac
 
 RUN docker-php-ext-install -j$(nproc) \
     sockets \
+    ftp \
     bcmath \
     gd \
     intl \
@@ -82,21 +83,21 @@ RUN mkdir -p /usr/local/share/misc/php-spx && \
       && docker-php-ext-install -j$(nproc) spx;  \
     fi;
 
-ARG SWOOLE_VERSION=5.1.1
-RUN mkdir /usr/src/php/ext/swoole  \
-    && curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz  \
-    && tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole  \
-    && docker-php-ext-configure swoole \
-        --enable-mysqlnd \
-        --enable-openssl \
-        --enable-sockets --enable-swoole-curl  \
-    && docker-php-ext-install -j$(nproc)  swoole
-
-RUN mkdir /usr/src/php/ext/meminfo  \
-    && git clone  https://github.com/BitOne/php-meminfo.git  /tmp/meminfo \
-    && cp -R /tmp/meminfo/extension/* /usr/src/php/ext/meminfo && ls /usr/src/php/ext/meminfo \
-    && docker-php-ext-configure meminfo  \
-    && docker-php-ext-install -j$(nproc)  meminfo
+#ARG SWOOLE_VERSION=5.1.1
+#RUN mkdir /usr/src/php/ext/swoole  \
+#    && curl -sfL https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -o swoole.tar.gz  \
+#    && tar xfz swoole.tar.gz --strip-components=1 -C /usr/src/php/ext/swoole  \
+#    && docker-php-ext-configure swoole \
+#        --enable-mysqlnd \
+#        --enable-openssl \
+#        --enable-sockets --enable-swoole-curl  \
+#    && docker-php-ext-install -j$(nproc)  swoole
+#
+#RUN mkdir /usr/src/php/ext/meminfo  \
+#    && git clone  https://github.com/BitOne/php-meminfo.git  /tmp/meminfo \
+#    && cp -R /tmp/meminfo/extension/* /usr/src/php/ext/meminfo && ls /usr/src/php/ext/meminfo \
+#    && docker-php-ext-configure meminfo  \
+#    && docker-php-ext-install -j$(nproc)  meminfo
 
 
 RUN php --version && php -m
@@ -120,7 +121,7 @@ RUN apk add --update --no-cache \
 		bash \
 		git \
 		vim \
-    unzip \
+        unzip \
 		curl \
 		openssh-client \
 		procps \

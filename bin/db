@@ -19,10 +19,11 @@ eval "$(
 COMMAND="${1}"
 shift
 ## sub-command execution
+MYSQL=mariadb
 case "$COMMAND" in
     sql)
         "${MDEV}" exec db   \
-           mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}" "$@"
+           $MYSQL -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}" "$@"
         ;;
     run)
         "${MDEV}" db sql -e "$@"
@@ -30,7 +31,7 @@ case "$COMMAND" in
     import)
         LC_ALL=C sed -E 's/DEFINER[ ]*=[ ]*`[^`]+`@`[^`]+`/DEFINER=CURRENT_USER/g' \
             | LC_ALL=C sed -E '/\@\@(GLOBAL\.GTID_PURGED|SESSION\.SQL_LOG_BIN)/d' \
-            | docker compose exec -T db mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}"
+            | docker compose exec -T db $MYSQL -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" --database="${MYSQL_DATABASE}"
         ;;
     dump)
         set +x
