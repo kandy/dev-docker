@@ -69,7 +69,7 @@ RUN pecl install -o -f redis && docker-php-ext-enable redis
 #RUN pecl install -o -f apcu && docker-php-ext-enable apcu
 
 ARG XDEBUG=0
-ARG XDEBUG_VERSION=3.3.2
+ARG XDEBUG_VERSION=3.5
 RUN if [ "$XDEBUG" = "1" ]; then \
       pecl install -o -f xdebug-${XDEBUG_VERSION}  \
       &&  echo Enable xdebug \
