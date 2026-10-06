@@ -64,20 +64,9 @@ preserved unless the user explicitly requests a reinstall.
 ./mdev down               # stop application services
 ./mdev in                 # open a shell in the app container
 ./mdev exec app <command> # run a command in the app container
-./mdev magento <args>     # run bin/magento
-./mdev test <args>        # run PHPUnit
-./mdev xdebug <command>   # run PHP with Xdebug
-./mdev redis <args>       # run redis-cli
 ```
 
-Database helpers:
 
-```bash
-./mdev db sql
-./mdev db run "SELECT 1"
-./mdev db dump > dump.sql
-./mdev db import < dump.sql
-```
 
 Use `./mdev help <command>` when help exists. If a wrapper does not support a
 needed operation, use `./mdev exec <service> <command>` or `docker compose`
@@ -93,6 +82,8 @@ the resolved URL when installation completes.
 The proxy generates a self-signed certificate under `.docker/traefik/`. Browser
 trust warnings are expected unless the certificate is trusted locally.
 
+Usally base url is https://ccsaas.test/$(basename $(pwd))/  
+
 ## Runtime Services
 
 The default Compose stack includes:
@@ -106,8 +97,6 @@ The default Compose stack includes:
 - `rabbit`: RabbitMQ
 - `fluentbit`: log forwarding
 
-Optional Compose definitions include Selenium and Varnish. Do not assume an
-optional service is running unless it was explicitly enabled.
 
 Use normal Adobe Commerce CLI functionality in this environment, including
 cache, indexer, cron, queue, setup, module, and deployment commands when
@@ -208,3 +197,5 @@ for the requested change.
 - Do not commit, push, or create a pull request without explicit user approval.
 - Before finishing, review the diff and verify that commands documented in this
   file exist in the current repository.
+
+Adobe Commerce (aka Magento) is including multiple repos: ce - in `src` directory, ee - `ee`, and b2b - in `b2b` directory.
