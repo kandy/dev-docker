@@ -120,6 +120,8 @@ For PHP changes:
 - Add or update focused tests for changed behavior.
 - Preserve backward compatibility for public APIs unless the task explicitly
   requires a reviewed breaking change.
+- Any new/changed event observers/plugins must be covered with integration tests (new or modification of exists) 
+  of target class
 
 For infrastructure changes:
 
