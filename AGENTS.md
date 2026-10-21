@@ -189,15 +189,43 @@ Common Commerce maintenance commands can be run through:
 Only run broad, destructive, or time-consuming commands when they are necessary
 for the requested change.
 
-## Change Discipline
 
-- Keep changes focused on the requested local-development behavior.
-- Do not edit generated files or local state when a source configuration change
-  is sufficient.
-- Do not remove volumes, reset databases, reinstall Commerce, or delete the
-  `src/` checkout without explicit approval.
-- Do not commit, push, or create a pull request without explicit user approval.
-- Before finishing, review the diff and verify that commands documented in this
-  file exist in the current repository.
+## Repository and runtime boundaries
 
-Adobe Commerce (aka Magento) is including multiple repos: ce - in `src` directory, ee - `ee`, and b2b - in `b2b` directory.
+This repository owns the Docker development infrastructure, not the Commerce
+application. The separate, git-ignored `src/` checkout contains Magento Open
+Source (CE); `src/ee/` and `src/b2b/` contain the related Commerce repositories.
+Determine which checkout owns a change before editing. Review Commerce changes
+with `git -C src status` and `git -C src diff`, not just the root Git diff.
+
+Commerce source is mounted from `./src` to `/magento`. Edit source locally and
+run PHP, Composer, Magento CLI, and PHPUnit in the `app` container through
+`./mdev exec app <command>`. Run wrapper commands from this repository root;
+do not invoke scripts in `bin/` directly.
+
+Traefik is shared through the external `traefik-ingress` network. `./mdev up`
+reuses a compatible gateway or starts one, exposing nginx at
+`https://ccsaas.test/<compose-project-name>/`. nginx forwards PHP requests to
+`app`; the application also depends on MariaDB, Redis, OpenSearch, and RabbitMQ.
+Keep service versions, health checks, dependencies, mounts, and networking
+consistent across the core and optional Compose definitions. Preserve
+`./src:/magento`.
+
+
+## Engineering Style
+
+- Keep changes small and direct. Most fixes should touch the narrowest code path
+  that explains the bug, performance issue issue, or user-facing behavior.
+- Change the least amount of files possible. A change that touches many files is
+  more likely to be a bad change than a good one unless the broader scope is
+  directly required.
+- Prefer practical fixes over broad architecture work. Add abstractions only
+  when they remove real repeated logic or match an existing Magento pattern.
+- Prefer fewer dependencies. Do not add new dependencies to Magento unless they
+  are absolutely necessary.
+- Revert or disable problematic behavior quickly when it breaks users. It is
+  better to remove a broken feature path than keep a complicated partial fix.
+- Preserve existing APIs, file layout, and
+  workflow compatibility unless the change is explicitly about replacing them.
+
+Before finish with code (only if there any modified php files) run static tests
