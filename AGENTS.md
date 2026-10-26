@@ -214,6 +214,9 @@ consistent across the core and optional Compose definitions. Preserve
 
 ## Engineering Style
 
+- **Design data flows to minimize temporal coupling!**
+- Reduce public interfaces and the extent of interaction between modules.
+- Apply SOLID principles and "Clean Code" practices.
 - Keep changes small and direct. Most fixes should touch the narrowest code path
   that explains the bug, performance issue issue, or user-facing behavior.
 - Change the least amount of files possible. A change that touches many files is
