@@ -13,23 +13,23 @@ function m_fatal {
 
 ## verify docker is running
 function m_assumeDocker {
-  ## verify docker-compose is installed
-  if ! which docker-compose >/dev/null; then
-    m_fatal "docker-compose could not be found; please install and try again."
+  ## verify docker compose is installed
+  if ! which docker compose >/dev/null; then
+    m_fatal "docker compose could not be found; please install and try again."
   fi
 
-  ## verify docker-compose meets version constraint
+  ## verify docker compose meets version constraint
   DOCKER_COMPOSE_REQUIRE="1.25.0"
   DOCKER_COMPOSE_REQUIRE_V2="2.2.3"
-  DOCKER_COMPOSE_VERSION="$(docker-compose --version | grep -oE '[0-9\.]+' | head -n1)"
+  DOCKER_COMPOSE_VERSION="$(docker compose --version | grep -oE '[0-9\.]+' | head -n1)"
   if ! test $(m_version ${DOCKER_COMPOSE_VERSION}) -ge $(m_version ${DOCKER_COMPOSE_REQUIRE}); then
-    m_fatal "docker-compose version should be ${DOCKER_COMPOSE_REQUIRE} or higher (${DOCKER_COMPOSE_VERSION} installed)"
+    m_fatal "docker compose version should be ${DOCKER_COMPOSE_REQUIRE} or higher (${DOCKER_COMPOSE_VERSION} installed)"
   fi
 
   if test $(m_version ${DOCKER_COMPOSE_VERSION}) -ge $(m_version "2.0.0") \
     && ! test $(m_version ${DOCKER_COMPOSE_VERSION}) -ge $(m_version ${DOCKER_COMPOSE_REQUIRE_V2})
   then
-    m_fatal "docker-compose version should be ${DOCKER_COMPOSE_REQUIRE_V2} or higher (${DOCKER_COMPOSE_VERSION} installed)"
+    m_fatal "docker compose version should be ${DOCKER_COMPOSE_REQUIRE_V2} or higher (${DOCKER_COMPOSE_VERSION} installed)"
   fi
 
   if ! docker system info >/dev/null 2>&1; then
