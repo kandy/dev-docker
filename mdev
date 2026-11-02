@@ -23,7 +23,7 @@ if (( "$#" )); then
      COMMAND="${1}"
      shift
      if [[ "${1}" == "help" ]] || [[ "${1}" == "--help" ]]; then
-       ${MDEV_DIR}/m help $COMMAND || exit $? && exit $?
+       "${MDEV}" help "$COMMAND" || exit $? && exit $?
      fi
      source "${MDEV_DIR}/bin/${COMMAND}";
   else
@@ -53,4 +53,3 @@ else
   done
 
 fi
-

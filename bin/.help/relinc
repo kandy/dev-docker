@@ -1,0 +1,5 @@
+Usage:
+  mdev relinc
+
+Relink the Adobe Commerce EE and B2B repositories into the CE checkout at src/.
+Links or updates EE and B2B symlinks in the CE checkout.

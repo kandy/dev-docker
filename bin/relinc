@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
+
+m_assumeDocker
+cd "$MDEV_DIR"
+
+docker compose run --rm --no-deps \
+  -v "$MDEV_DIR/infa:/infa" \
+  --entrypoint php app \
+  -r 'require "/magento/vendor/autoload.php"; require "/infa/tools/Magento/Tools/Edition/Console/Command/Build.php"; $app = new Symfony\Component\Console\Application("Magento Infrastructure Tools"); $app->add(new Magento\Tools\Edition\Console\Command\Build()); $app->run();' -- \
+  edition:build --command=link --edition=b2b --exclude=true \
+  --ce-source=/magento --ee-source=/magento/ee --b2b-source=/magento/b2b

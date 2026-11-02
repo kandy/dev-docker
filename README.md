@@ -12,6 +12,14 @@ Docker infrastructure for Magento development
     mdev install
   ```
 
+## Relinking Adobe Commerce and B2B
+
+Run the edition linker to link `src/ee/` and `src/b2b/` into the CE checkout:
+
+```bash
+mdev relinc
+```
+
 ## Shared proxy
 
 This project includes the Traefik gateway declaration and can run independently.
