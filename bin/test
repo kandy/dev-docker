@@ -1,4 +1,333 @@
 #!/bin/bash
-docker compose exec app bash -c "XDEBUG_CONFIG= php -dzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so /magento/vendor/bin/phpunit $*"
+[[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
+m_assumeDocker
+cd "$MDEV_DIR"
 
+SRC_DIR="$MDEV_DIR/src"
+PHPUNIT=/magento/vendor/bin/phpunit
+
+if [[ -z "$(docker compose ps -q app)" ]]; then
+    m_fatal 'No container found for app service. Start it with "mdev up".'
+fi
+
+MODE=phpunit
+case "${1:-}" in
+    static|unit|integration|intgration)
+        MODE="$1"
+        shift
+        ;;
+esac
+
+mdev_test_resolve_merge_base() {
+    local base="${MDEV_TEST_BASE:-}"
+    local candidate
+
+    if [[ -z "$base" ]]; then
+        for candidate in origin/2.4-develop cia/2.4-develop 2.4-develop; do
+            if git -C "$SRC_DIR" rev-parse --verify --quiet "${candidate}^{commit}" >/dev/null; then
+                base="$candidate"
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$base" ]] || ! git -C "$SRC_DIR" rev-parse --verify --quiet "${base}^{commit}" >/dev/null; then
+        m_fatal 'Could not resolve the test base. Set MDEV_TEST_BASE to the branch or commit to compare against.'
+    fi
+
+    MERGE_BASE="$(git -C "$SRC_DIR" merge-base HEAD "$base")" \
+        || m_fatal "Could not find a merge-base for HEAD and $base."
+    TEST_BASE_LABEL="$base"
+}
+
+mdev_test_load_changed_files() {
+    local files
+    local path
+
+    files=$(
+        {
+            git -C "$SRC_DIR" diff --name-only "$MERGE_BASE" --
+            git -C "$SRC_DIR" ls-files --others --exclude-standard
+        } | sort -u
+    )
+
+    CHANGED_FILES=()
+    while IFS= read -r path; do
+        [[ -n "$path" ]] && CHANGED_FILES+=("$path")
+    done <<< "$files"
+}
+
+mdev_test_load_added_files() {
+    local files
+    local path
+
+    files=$(
+        {
+            git -C "$SRC_DIR" diff --name-only --diff-filter=A "$MERGE_BASE" --
+            git -C "$SRC_DIR" ls-files --others --exclude-standard
+        } | sort -u
+    )
+
+    ADDED_FILES=()
+    while IFS= read -r path; do
+        [[ -n "$path" ]] && ADDED_FILES+=("$path")
+    done <<< "$files"
+}
+
+mdev_test_add_target() {
+    local path="$1"
+    local existing
+    local -a remaining_targets=()
+
+    [[ -e "$SRC_DIR/$path" ]] || return 0
+    for existing in "${TEST_TARGETS[@]}"; do
+        [[ "$existing" == "$path" ]] && return 0
+        if [[ -d "$SRC_DIR/$existing" && "$path" == "$existing/"* ]]; then
+            return 0
+        fi
+    done
+
+    if [[ -d "$SRC_DIR/$path" ]]; then
+        for existing in "${TEST_TARGETS[@]}"; do
+            [[ "$existing" == "$path/"* ]] || remaining_targets+=("$existing")
+        done
+        TEST_TARGETS=("${remaining_targets[@]}")
+    fi
+
+    TEST_TARGETS+=("$path")
+}
+
+mdev_test_add_module_targets() {
+    local suite="$1"
+    local module_root="$2"
+    local source_path="$3"
+    local integration_root="$4"
+    local relative_test_path
+    local candidate
+    local component
+
+    if [[ "$suite" == unit && "$source_path" == Test/Unit/* ]]; then
+        mdev_test_add_target "$module_root/$source_path"
+        return
+    elif [[ "$suite" == integration && "$source_path" == Test/Integration/* ]]; then
+        mdev_test_add_target "$module_root/$source_path"
+        return
+    fi
+
+    while [[ "$source_path" == */* ]]; do
+        component="${source_path%%/*}"
+        if [[ "$suite" == unit && -d "$SRC_DIR/$module_root/$component/Test/Unit" ]]; then
+            module_root="$module_root/$component"
+            source_path="${source_path#*/}"
+        elif [[ "$suite" == integration ]] \
+            && { [[ -d "$SRC_DIR/$module_root/$component/Test/Integration" ]] \
+                || [[ -n "$integration_root" && -d "$SRC_DIR/$integration_root/$component" ]]; }; then
+            module_root="$module_root/$component"
+            [[ -z "$integration_root" ]] || integration_root="$integration_root/$component"
+            source_path="${source_path#*/}"
+        else
+            break
+        fi
+    done
+
+    if [[ "$source_path" == *.php ]]; then
+        relative_test_path="${source_path%.php}Test.php"
+        if [[ "$suite" == unit ]]; then
+            candidate="$module_root/Test/Unit/$relative_test_path"
+            if [[ -f "$SRC_DIR/$candidate" ]]; then
+                mdev_test_add_target "$candidate"
+                return
+            fi
+        else
+            candidate="$module_root/Test/Integration/$relative_test_path"
+            if [[ -f "$SRC_DIR/$candidate" ]]; then
+                mdev_test_add_target "$candidate"
+                return
+            fi
+            if [[ -n "$integration_root" ]]; then
+                candidate="$integration_root/$relative_test_path"
+                if [[ -f "$SRC_DIR/$candidate" ]]; then
+                    mdev_test_add_target "$candidate"
+                    return
+                fi
+            fi
+        fi
+    fi
+
+    if [[ "$suite" == unit ]]; then
+        mdev_test_add_target "$module_root/Test/Unit"
+    elif [[ -d "$SRC_DIR/$module_root/Test/Integration" ]]; then
+        mdev_test_add_target "$module_root/Test/Integration"
+    elif [[ -n "$integration_root" ]]; then
+        mdev_test_add_target "$integration_root"
+    fi
+}
+
+mdev_test_collect_targets() {
+    local suite="$1"
+    local path
+    local remaining
+    local vendor
+    local module
+    local component
+    local module_root
+    local integration_root
+    local source_path
+
+    TEST_TARGETS=()
+    for path in "${CHANGED_FILES[@]}"; do
+        case "$suite:$path" in
+            unit:*/Test/Unit/*|unit:dev/tests/unit/testsuite/*)
+                mdev_test_add_target "$path"
+                continue
+                ;;
+            integration:*/Test/Integration/*|integration:dev/tests/integration/testsuite/*)
+                mdev_test_add_target "$path"
+                continue
+                ;;
+        esac
+
+        case "$path" in
+            app/code/*/*/*)
+                remaining="${path#app/code/}"
+                vendor="${remaining%%/*}"
+                remaining="${remaining#*/}"
+                module="${remaining%%/*}"
+                source_path="${remaining#*/}"
+                module_root="app/code/$vendor/$module"
+                integration_root=
+                if [[ "$vendor" == Magento ]]; then
+                    integration_root="dev/tests/integration/testsuite/Magento/$module"
+                fi
+                mdev_test_add_module_targets "$suite" "$module_root" "$source_path" "$integration_root"
+                ;;
+            lib/internal/Magento/*/*)
+                remaining="${path#lib/internal/Magento/}"
+                component="${remaining%%/*}"
+                source_path="${remaining#*/}"
+                module_root="lib/internal/Magento/$component"
+                integration_root="dev/tests/integration/testsuite/Magento/$component"
+                mdev_test_add_module_targets "$suite" "$module_root" "$source_path" "$integration_root"
+                ;;
+            setup/src/Magento/*/*)
+                remaining="${path#setup/src/Magento/}"
+                component="${remaining%%/*}"
+                source_path="${remaining#*/}"
+                module_root="setup/src/Magento/$component"
+                integration_root="dev/tests/integration/testsuite/Magento/$component"
+                mdev_test_add_module_targets "$suite" "$module_root" "$source_path" "$integration_root"
+                ;;
+        esac
+    done
+}
+
+mdev_test_is_explicit_target() {
+    local suite="$1"
+    local argument
+    local path
+    shift
+
+    for argument in "$@"; do
+        case "$argument" in
+            /magento/*) path="${argument#/magento/}" ;;
+            ./*) path="${argument#./}" ;;
+            /*|-*) continue ;;
+            *) path="$argument" ;;
+        esac
+
+        [[ -e "$SRC_DIR/$path" ]] || continue
+        case "$suite:$path" in
+            unit:*/Test/Unit|unit:*/Test/Unit/*|unit:dev/tests/unit/testsuite/*|\
+            integration:*/Test/Integration|integration:*/Test/Integration/*|\
+            integration:dev/tests/integration/testsuite/*)
+                return 0
+                ;;
+        esac
+    done
+
+    return 1
+}
+
+mdev_test_run_static() {
+    local list_dir="$SRC_DIR/dev/tests/static/testsuite/Magento/Test/_files"
+
+    mdev_test_resolve_merge_base
+    mdev_test_load_changed_files
+    mdev_test_load_added_files
+
+    [[ -d "$list_dir" ]] || m_fatal 'Magento static test changed-file list directory was not found.'
+    CHANGED_LIST=
+    ADDED_LIST=
+    mdev_test_cleanup_lists() {
+        [[ -z "$CHANGED_LIST" ]] || rm -f -- "$CHANGED_LIST"
+        [[ -z "$ADDED_LIST" ]] || rm -f -- "$ADDED_LIST"
+    }
+
+    CHANGED_LIST="$(mktemp "$list_dir/changed_files_mdev.XXXXXX")" \
+        || m_fatal 'Could not create the temporary static changed-file list.'
+    trap mdev_test_cleanup_lists EXIT
+    ADDED_LIST="$(mktemp "$list_dir/changed_files_mdev.added.XXXXXX")" \
+        || m_fatal 'Could not create the temporary static added-file list.'
+
+    printf '%s\n' "${CHANGED_FILES[@]}" > "$CHANGED_LIST"
+    printf '%s\n' "${ADDED_FILES[@]}" > "$ADDED_LIST"
+
+    printf 'Running Magento static tests for %d changed file(s), based on %s.\n' \
+        "${#CHANGED_FILES[@]}" "$TEST_BASE_LABEL"
+    docker compose exec -T -w /magento app php "$PHPUNIT" --no-configuration \
+        --bootstrap /magento/dev/tests/static/framework/bootstrap.php "$@" \
+        /magento/dev/tests/static/testsuite/Magento/Test/Php/LiveCodeTest.php
+}
+
+mdev_test_run_related_suite() {
+    local suite="$1"
+    shift
+    local config
+    local path
+    local -a container_targets=()
+
+    if [[ "$suite" == unit ]]; then
+        config=/magento/dev/tests/unit/phpunit.xml.dist
+    else
+        config=/magento/dev/tests/integration/phpunit.xml.dist
+    fi
+
+    if mdev_test_is_explicit_target "$suite" "$@"; then
+        docker compose exec -T -w /magento app php "$PHPUNIT" --no-extensions \
+            -c "$config" "$@"
+        return
+    fi
+
+    mdev_test_resolve_merge_base
+    mdev_test_load_changed_files
+    mdev_test_collect_targets "$suite"
+    if [[ "${#TEST_TARGETS[@]}" -eq 0 ]]; then
+        m_fatal "No $suite test targets matched changed files. Pass a test path explicitly or set MDEV_TEST_BASE."
+    fi
+
+    printf 'Running %s tests for %d changed file(s), based on %s:\n' \
+        "$suite" "${#CHANGED_FILES[@]}" "$TEST_BASE_LABEL"
+    for path in "${TEST_TARGETS[@]}"; do
+        printf '  /magento/%s\n' "$path"
+        container_targets+=("/magento/$path")
+    done
+
+    docker compose exec -T -w /magento app php "$PHPUNIT" --no-extensions \
+        -c "$config" "$@" "${container_targets[@]}"
+}
+
+case "$MODE" in
+    static)
+        mdev_test_run_static "$@"
+        ;;
+    unit)
+        mdev_test_run_related_suite unit "$@"
+        ;;
+    integration|intgration)
+        mdev_test_run_related_suite integration "$@"
+        ;;
+    *)
+        docker compose exec -T -w /magento app php "$PHPUNIT" "$@"
+        ;;
+esac

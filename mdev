@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-trap 'error "$(printf "Command \`%s\` at $BASH_SOURCE:$LINENO failed with exit code $?" "$BASH_COMMAND")"' ERR
+trap 'status=$?; printf "Command \"%s\" at %s:%s failed with exit code %s\n" "$BASH_COMMAND" "${BASH_SOURCE[0]}" "$LINENO" "$status" >&2; exit "$status"' ERR
 
 ## find directory where this script is located following symlinks if necessary
 readonly MDEV_DIR="$(

@@ -1,0 +1,34 @@
+Usage:
+  mdev test [PHPUnit arguments...]
+  mdev test static [PHPUnit arguments...]
+  mdev test unit [PHPUnit options...]
+  mdev test integration [PHPUnit options...]
+
+Runs PHPUnit in the running app container using its configured PHP runtime.
+The plain form passes arguments directly to vendor/bin/phpunit.
+
+The static, unit, and integration helpers compare the Commerce checkout to
+MDEV_TEST_BASE (default: origin/2.4-develop, with local fallbacks), and include
+staged, unstaged, and untracked files. Set MDEV_TEST_BASE to compare against a
+different branch or commit.
+
+  static       Runs the Magento PHP LiveCodeTest class with a temporary
+               changed-file list, including the current branch diff.
+  unit         Runs changed unit test files and conventional tests related to
+               changed source files.
+  integration  Runs changed integration test files and conventional tests
+               related to changed source files.
+
+Unit and integration helpers accept PHPUnit options such as --filter. Pass a
+test file or directory to run it explicitly. If no related test target can be
+found, the helper exits with an error instead of running the entire suite.
+Xdebug is not forced; use the app-xdebug service separately when coverage is
+required.
+
+Examples:
+  mdev test static
+  mdev test unit --filter testConstructorIntegrity
+  mdev test integration --filter testSomething
+  mdev test unit /magento/app/code/Magento/Catalog/Test/Unit
+
+The misspelled alias "intgration" is also accepted.

@@ -12,6 +12,27 @@ Docker infrastructure for Magento development
     mdev install
   ```
 
+## Running PHPUnit tests
+
+`mdev test` runs PHPUnit in the running `app` container with the container's
+configured PHP runtime. The plain form passes arguments through to PHPUnit.
+The `static`, `unit`, and `integration` helpers compare the `src/` checkout
+against `MDEV_TEST_BASE` (default `origin/2.4-develop`, with local fallbacks)
+and include staged, unstaged, and untracked files. Set `MDEV_TEST_BASE` to
+choose another branch or commit.
+
+```bash
+mdev test static
+mdev test unit --filter testName
+mdev test integration --filter testName
+```
+
+The static helper runs Magento's PHP `LiveCodeTest` class with a temporary
+changed-file list. Unit and integration helpers select changed test files and
+conventional tests related to changed source files; pass a test path to run it
+explicitly. They fail clearly if no related test target is found rather than
+silently running the full suite. Xdebug is not forced by the wrapper.
+
 ## Relinking Adobe Commerce and B2B
 
 Run the edition linker to link `src/ee/` and `src/b2b/` into the CE checkout:
