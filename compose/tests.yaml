@@ -1,0 +1,53 @@
+services:
+  test-app:
+    image: ${MDEV_TEST_APP_IMAGE:-${COMPOSE_PROJECT_NAME}-app}
+    profiles: [tests]
+    init: true
+    user: "${U_ID}"
+    command: ["php", "-S", "0.0.0.0:8080", "-t", "/magento/pub", "/magento/pub/index.php"]
+    volumes:
+      - ./src:/magento:delegated
+      - ./src/app/code:/mdev-code:ro
+      - ./src/app/etc:/mdev-etc:ro
+      - ./src:/mdev-source:ro
+      - ./etc/php/php.ini:/usr/local/etc/php/php.ini:ro
+      - ./etc/tests/test-integrity.php:/mdev-tests/BlockInstantiationTest.php:ro
+      - ./etc/tests/test-integrity-di.php:/mdev-tests/DiConfigFilesTest.php:ro
+      - test-code:/magento/app/code
+      - test-ee-code:${MDEV_TEST_EE_CODE_TARGET:-/mdev-unused/ee}
+      - test-b2b-code:${MDEV_TEST_B2B_CODE_TARGET:-/mdev-unused/b2b}
+      - test-runtime:/magento/dev/tests/integration/tmp/mdev-fast
+      - test-generated:/magento/generated
+      - test-etc:/magento/app/etc
+      - test-var:/magento/var
+      - test-media:/magento/pub/media
+      - test-static:/magento/pub/static
+  test-db:
+    image: mariadb:11.4
+    profiles: [tests]
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MDEV_TEST_DB_PASSWORD:?Set by mdev test fast}
+      MARIADB_DATABASE: mdev_fast
+    tmpfs:
+      - /var/lib/mysql:size=${MDEV_TEST_DB_MEMORY:-2g}
+    command:
+      - --max-allowed-packet=268435456
+      - --innodb-buffer-pool-size=268435456
+      - --innodb-flush-log-at-trx-commit=2
+      - --skip-log-bin
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p\"$$MARIADB_ROOT_PASSWORD\" --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  test-runtime:
+  test-generated:
+  test-code:
+  test-ee-code:
+  test-b2b-code:
+  test-etc:
+  test-var:
+  test-media:
+  test-static:

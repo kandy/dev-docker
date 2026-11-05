@@ -112,6 +112,11 @@ For PHP changes:
 - Declare strict types when required by the target module's conventions.
 - Use dependency injection; do not use the Object Manager directly in
   application code.
+- For new code on the current branch, and new dependencies added to core
+  classes without `@api`, use direct constructor injection without an Object
+  Manager fallback.
+- Preserve optional Object Manager fallbacks when adding dependencies to
+  existing `@api` classes where needed for backward compatibility.
 - Keep constructors limited to dependency assignment and argument validation.
 - Prefer service contracts and existing framework abstractions.
 - Use factories or injected collaborators instead of directly constructing

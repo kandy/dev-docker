@@ -2,7 +2,7 @@
 [[ ! ${MDEV_DIR} ]] && >&2 echo -e "\033[31mThis script is not intended to be run directly!\033[0m" && exit 1
 
 m_assumeDocker
-cd "$MDEV_DIR"
+cd "$MDEV_DIR" || exit 1
 
 SRC_DIR="$MDEV_DIR/src"
 PHPUNIT=/magento/vendor/bin/phpunit
@@ -13,11 +13,17 @@ fi
 
 MODE=phpunit
 case "${1:-}" in
-    static|unit|integration|intgration)
+    static|unit|integration|intgration|fast)
         MODE="$1"
         shift
         ;;
 esac
+[[ "$MODE" != intgration ]] || MODE=integration
+DRY_RUN=0
+if [[ "$MODE" != phpunit && "${1:-}" == --dry-run ]]; then
+    DRY_RUN=1
+    shift
+fi
 
 mdev_test_resolve_merge_base() {
     local base="${MDEV_TEST_BASE:-}"
@@ -56,6 +62,7 @@ mdev_test_load_changed_files() {
     while IFS= read -r path; do
         [[ -n "$path" ]] && CHANGED_FILES+=("$path")
     done <<< "$files"
+    return 0
 }
 
 mdev_test_load_added_files() {
@@ -73,6 +80,7 @@ mdev_test_load_added_files() {
     while IFS= read -r path; do
         [[ -n "$path" ]] && ADDED_FILES+=("$path")
     done <<< "$files"
+    return 0
 }
 
 mdev_test_add_target() {
@@ -154,6 +162,11 @@ mdev_test_add_module_targets() {
             fi
         fi
     fi
+    if [[ "${MDEV_TEST_SELECTION:-related}" == focused ]]; then
+        printf '  No conventional %s test for %s/%s; review its regression coverage.\n' \
+            "$suite" "$module_root" "$source_path" >&2
+        return
+    fi
 
     if [[ "$suite" == unit ]]; then
         mdev_test_add_target "$module_root/Test/Unit"
@@ -177,16 +190,25 @@ mdev_test_collect_targets() {
 
     TEST_TARGETS=()
     for path in "${CHANGED_FILES[@]}"; do
+        [[ "$path" != */_files/* ]] || continue
         case "$suite:$path" in
             unit:*/Test/Unit/*|unit:dev/tests/unit/testsuite/*)
-                mdev_test_add_target "$path"
+                [[ "$path" != *Test.php ]] || mdev_test_add_target "$path"
                 continue
                 ;;
             integration:*/Test/Integration/*|integration:dev/tests/integration/testsuite/*)
-                mdev_test_add_target "$path"
+                [[ "$path" != *Test.php ]] || mdev_test_add_target "$path"
                 continue
                 ;;
         esac
+        # A fixture or a test belonging to another suite is not production code.
+        case "$path" in
+            */Test/*|dev/tests/*) continue ;;
+        esac
+        if [[ "${MDEV_TEST_SELECTION:-related}" == focused && "$path" != *.php ]]; then
+            printf '  Focused selection: review coverage for %s (not a PHP class).\n' "$path" >&2
+            continue
+        fi
 
         case "$path" in
             app/code/*/*/*)
@@ -255,6 +277,10 @@ mdev_test_run_static() {
     mdev_test_resolve_merge_base
     mdev_test_load_changed_files
     mdev_test_load_added_files
+    if [[ "$DRY_RUN" == 1 ]]; then
+        printf '%s\n' "${CHANGED_FILES[@]}"
+        return
+    fi
 
     [[ -d "$list_dir" ]] || m_fatal 'Magento static test changed-file list directory was not found.'
     CHANGED_LIST=
@@ -275,7 +301,9 @@ mdev_test_run_static() {
 
     printf 'Running Magento static tests for %d changed file(s), based on %s.\n' \
         "${#CHANGED_FILES[@]}" "$TEST_BASE_LABEL"
-    docker compose exec -T -w /magento app php "$PHPUNIT" --no-configuration \
+    local -a timeout_args=()
+    [[ -z "${MDEV_TEST_COMMAND_TIMEOUT:-}" ]] || timeout_args=(timeout "$MDEV_TEST_COMMAND_TIMEOUT")
+    docker compose exec -T -w /magento app "${timeout_args[@]}" php "$PHPUNIT" --no-configuration \
         --bootstrap /magento/dev/tests/static/framework/bootstrap.php "$@" \
         /magento/dev/tests/static/testsuite/Magento/Test/Php/LiveCodeTest.php
 }
@@ -285,17 +313,23 @@ mdev_test_run_related_suite() {
     shift
     local config
     local path
+    local -a extension_args=()
     local -a container_targets=()
 
     if [[ "$suite" == unit ]]; then
         config=/magento/dev/tests/unit/phpunit.xml.dist
+        extension_args+=(--no-extensions)
     else
         config=/magento/dev/tests/integration/phpunit.xml.dist
     fi
 
     if mdev_test_is_explicit_target "$suite" "$@"; then
-        docker compose exec -T -w /magento app php "$PHPUNIT" --no-extensions \
-            -c "$config" "$@"
+        if [[ "$DRY_RUN" == 1 ]]; then
+            printf '%s\n' "$@"
+            return
+        fi
+        docker compose exec -T -w /magento app php "$PHPUNIT" \
+            "${extension_args[@]}" -c "$config" "$@"
         return
     fi
 
@@ -312,19 +346,24 @@ mdev_test_run_related_suite() {
         printf '  /magento/%s\n' "$path"
         container_targets+=("/magento/$path")
     done
+    [[ "$DRY_RUN" != 1 ]] || return 0
 
-    docker compose exec -T -w /magento app php "$PHPUNIT" --no-extensions \
-        -c "$config" "$@" "${container_targets[@]}"
+    docker compose exec -T -w /magento app php "$PHPUNIT" \
+        "${extension_args[@]}" -c "$config" "$@" "${container_targets[@]}"
 }
 
 case "$MODE" in
+    fast)
+        source "$MDEV_DIR/etc/tests/test-fast.sh"
+        mdev_test_fast "$@"
+        ;;
     static)
         mdev_test_run_static "$@"
         ;;
     unit)
         mdev_test_run_related_suite unit "$@"
         ;;
-    integration|intgration)
+    integration)
         mdev_test_run_related_suite integration "$@"
         ;;
     *)

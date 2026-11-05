@@ -3,6 +3,7 @@ Usage:
   mdev test static [PHPUnit arguments...]
   mdev test unit [PHPUnit options...]
   mdev test integration [PHPUnit options...]
+  mdev test fast [--dry-run]
 
 Runs PHPUnit in the running app container using its configured PHP runtime.
 The plain form passes arguments directly to vendor/bin/phpunit.
@@ -25,10 +26,34 @@ found, the helper exits with an error instead of running the entire suite.
 Xdebug is not forced; use the app-xdebug service separately when coverage is
 required.
 
+Fast mode runs changed-file static checks and focused unit tests in parallel,
+then related integration and integrity tests against an isolated RAM-backed
+MariaDB and reusable Docker-volume sandbox. Integrity checks cover DI and
+changed block/template/configuration types. DI checks validate changed-module
+files and retain all native global merges. Block instantiation scans only
+modules with block changes, using Magento's native assertions.
+Service-contract implementations,
+Api/ contracts and ResourceModel/ changes select related REST tests. Resolver
+and GraphQL schema changes select related GraphQL tests. Changed API tests are
+always included. Unmapped coverage is reported, not silently expanded to the
+entire suite. This is focused feedback, not full regression or JavaScript coverage.
+
+Choose a feature base with MDEV_TEST_BASE. Fast mode has a 300-second budget
+(MDEV_TEST_TIMEOUT overrides it) and fails on timeout or any failing suite.
+MDEV_TEST_REBUILD=1 forces a fresh isolated integration installation.
+Logs, timings, and the local test DB password are kept in .docker/tests/.
+Only one fast run is allowed at a time. Fixture module deployment and generated
+code are isolated in the test-app container, not written to your checkout.
+API requests use its private HTTP server and disposable test database; a DB
+snapshot is restored after every API suite, including failures.
+--dry-run is also supported as the first option of static/unit/integration.
+
 Examples:
   mdev test static
   mdev test unit --filter testConstructorIntegrity
   mdev test integration --filter testSomething
   mdev test unit /magento/app/code/Magento/Catalog/Test/Unit
+  MDEV_TEST_BASE=HEAD^ mdev test fast --dry-run
+  MDEV_TEST_BASE=HEAD^ mdev test fast
 
 The misspelled alias "intgration" is also accepted.
