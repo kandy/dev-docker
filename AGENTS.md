@@ -18,10 +18,12 @@ The tracked repository contains the local development environment:
 - `compose/`: optional and shared Compose definitions
 - `build/`: local container images
 - `etc/`: nginx, PHP, and service configuration
+- `tmp/`: folder for temporary files for agents
 
 The `src/` directory is a git-ignored Adobe Commerce source checkout mounted
 into the containers at `/magento`.
 
+- For agent temporary files use `tmp/{session_id}/` directory
 - Read and edit Commerce source files locally under `src/`.
 - Run PHP, Composer, Magento CLI, and test commands in the `app` container.
 - Do not expect changes under `src/` to appear in this repository's Git diff.
